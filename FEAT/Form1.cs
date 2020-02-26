@@ -136,14 +136,16 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                         yaz0 = true;
                     }
                 }
-                if ((ModifierKeys == Keys.Control) && (MessageBox.Show("Compress " + path + "?", "Prompt", MessageBoxButtons.YesNo, MessageBoxIcon.Asterisk) == DialogResult.Yes))
+                if (ModifierKeys == Keys.Control) //&& (MessageBox.Show("Compress " + path + "?", "Prompt", MessageBoxButtons.YesNo, MessageBoxIcon.Asterisk) == DialogResult.Yes))
                 {
                     var cmp = LZ11Compress(File.ReadAllBytes(path));
                     byte[] cmp2 = new byte[cmp.Length + 4];
 
                     cmp2[0] = 0x13;
+                    cmp2[1] = 0xff;
+                    cmp2[2] = 0xff;
                     Array.Copy(cmp, 0, cmp2, 4, cmp.Length);
-                    Array.Copy(cmp, 1, cmp2, 1, 3);
+                    //Array.Copy(cmp, 1, cmp2, 1, 3);
                     File.WriteAllBytes(path + ".lz", cmp2);
                     AddLine(RTB_Output, string.Format("LZ13 compressed {0} to {1}", path, path + ".lz"));
                 }
