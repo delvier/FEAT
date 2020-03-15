@@ -43,7 +43,7 @@
             this.RTB_Output.ReadOnly = true;
             this.RTB_Output.Size = new System.Drawing.Size(450, 269);
             this.RTB_Output.TabIndex = 12;
-            this.RTB_Output.Text = "Open a file, or Drag/Drop several! Click this box to clear its text.\n";
+            this.RTB_Output.Text = "Open a file, or Drag/Drop several! Click this box to clear its text. \n Ctrl + Drag/Drop for normal compression. \n Alt + Drag/Drop for extended compression.\n";
             this.RTB_Output.Click += new System.EventHandler(this.RTB_Output_Click);
             // 
             // TB_FilePath

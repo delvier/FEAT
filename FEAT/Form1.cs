@@ -136,7 +136,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                         yaz0 = true;
                     }
                 }
-                if (ModifierKeys == Keys.Control) //&& (MessageBox.Show("Compress " + path + "?", "Prompt", MessageBoxButtons.YesNo, MessageBoxIcon.Asterisk) == DialogResult.Yes))
+                if (ModifierKeys == Keys.Alt) //&& (MessageBox.Show("Compress " + path + "?", "Prompt", MessageBoxButtons.YesNo, MessageBoxIcon.Asterisk) == DialogResult.Yes))
                 {
                     var cmp = LZ11Compress(File.ReadAllBytes(path));
                     byte[] cmp2 = new byte[cmp.Length + 4];
@@ -147,7 +147,18 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                     Array.Copy(cmp, 0, cmp2, 4, cmp.Length);
                     //Array.Copy(cmp, 1, cmp2, 1, 3);
                     File.WriteAllBytes(path + ".lz", cmp2);
-                    AddLine(RTB_Output, string.Format("LZ13 compressed {0} to {1}", path, path + ".lz"));
+                    AddLine(RTB_Output, string.Format("LZ13 Extended compressed {0} to {1}", path, path + ".lz"));
+                }
+                else if (ModifierKeys == Keys.Control) //&& (MessageBox.Show("Compress " + path + "?", "Prompt", MessageBoxButtons.YesNo, MessageBoxIcon.Asterisk) == DialogResult.Yes))
+                {
+                    var cmp = LZ11Compress(File.ReadAllBytes(path));
+                    byte[] cmp2 = new byte[cmp.Length + 4];
+
+                    cmp2[0] = 0x13;
+                    Array.Copy(cmp, 0, cmp2, 4, cmp.Length);
+                    Array.Copy(cmp, 1, cmp2, 1, 3);
+                    File.WriteAllBytes(path + ".lz", cmp2);
+                    AddLine(RTB_Output, string.Format("LZ13 Normal compressed {0} to {1}", path, path + ".lz"));
                 }
                 else if (yaz0)
                 {
@@ -598,7 +609,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
         private void RTB_Output_Click(object sender, EventArgs e)
         {
             RTB_Output.Clear();
-            RTB_Output.Text = "Open a file, or Drag/Drop several! Click this box to clear its text." + Environment.NewLine;
+            RTB_Output.Text = "Open a file, or Drag/Drop several! Click this box to clear its text. \n Ctrl + Drag/Drop for normal compression. \n Alt + Drag/Drop for extended compression." + Environment.NewLine;
         }
     }
 }
