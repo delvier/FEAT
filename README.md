@@ -1,6 +1,6 @@
 # FEAT
 
-![UI](example_pictures/UI_2.png)
+![UI](example_pictures/UI_3.png)
 
 Fire Emblem Archive Tool (A tool to automatically extract data from 3DS Fire Emblem archives)
 
