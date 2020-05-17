@@ -33,6 +33,8 @@
             this.TB_FilePath = new System.Windows.Forms.TextBox();
             this.B_Go = new System.Windows.Forms.Button();
             this.B_Open = new System.Windows.Forms.Button();
+            this.checkBox1 = new System.Windows.Forms.CheckBox();
+            this.checkBox2 = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // RTB_Output
@@ -43,7 +45,7 @@
             this.RTB_Output.ReadOnly = true;
             this.RTB_Output.Size = new System.Drawing.Size(450, 269);
             this.RTB_Output.TabIndex = 12;
-            this.RTB_Output.Text = "Open a file, or Drag/Drop several! Click this box for more options.";
+            this.RTB_Output.Text = "Open a file, or Drag/Drop several! Click this box for more options.\n";
             this.RTB_Output.Click += new System.EventHandler(this.RTB_Output_Click);
             // 
             // TB_FilePath
@@ -76,18 +78,42 @@
             this.B_Open.UseVisualStyleBackColor = true;
             this.B_Open.Click += new System.EventHandler(this.B_Open_Click);
             // 
+            // checkBox1
+            // 
+            this.checkBox1.AutoSize = true;
+            this.checkBox1.Checked = true;
+            this.checkBox1.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.checkBox1.Location = new System.Drawing.Point(13, 316);
+            this.checkBox1.Name = "checkBox1";
+            this.checkBox1.Size = new System.Drawing.Size(229, 17);
+            this.checkBox1.TabIndex = 13;
+            this.checkBox1.Text = "Auto Extract Textures After Decompression";
+            this.checkBox1.UseVisualStyleBackColor = true;
+            // 
+            // checkBox2
+            // 
+            this.checkBox2.AutoSize = true;
+            this.checkBox2.Location = new System.Drawing.Point(248, 316);
+            this.checkBox2.Name = "checkBox2";
+            this.checkBox2.Size = new System.Drawing.Size(85, 17);
+            this.checkBox2.TabIndex = 14;
+            this.checkBox2.Text = "Import Mode";
+            this.checkBox2.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(469, 321);
+            this.ClientSize = new System.Drawing.Size(469, 341);
+            this.Controls.Add(this.checkBox2);
+            this.Controls.Add(this.checkBox1);
             this.Controls.Add(this.RTB_Output);
             this.Controls.Add(this.TB_FilePath);
             this.Controls.Add(this.B_Go);
             this.Controls.Add(this.B_Open);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.MaximumSize = new System.Drawing.Size(485, 360);
-            this.MinimumSize = new System.Drawing.Size(485, 360);
+            this.MaximumSize = new System.Drawing.Size(485, 380);
+            this.MinimumSize = new System.Drawing.Size(485, 380);
             this.Name = "Form1";
             this.Text = "Fire Emblem Archive Tool";
             this.ResumeLayout(false);
@@ -101,6 +127,8 @@
         private System.Windows.Forms.TextBox TB_FilePath;
         private System.Windows.Forms.Button B_Go;
         private System.Windows.Forms.Button B_Open;
+        private System.Windows.Forms.CheckBox checkBox1;
+        private System.Windows.Forms.CheckBox checkBox2;
     }
 }
 

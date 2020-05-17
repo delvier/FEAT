@@ -10,7 +10,9 @@ using DSDecmp.Formats.Nitro;
 using ctpktool;
 using SPICA.Formats.CtrH3D;
 using SPICA.Formats.CtrH3D.Texture;
+using SPICA.Formats.CtrGfx;
 using SPICA.WinForms;
+using SPICA.Formats.CtrGfx.Texture;
 
 namespace Fire_Emblem_Awakening_Archive_Tool
 {
@@ -121,12 +123,45 @@ namespace Fire_Emblem_Awakening_Archive_Tool
 
         private void Open(string path)
         {
-            if (Directory.Exists(path))
+            if (Directory.Exists(path) && !checkBox2.Checked)
             {
                     foreach (string p in (new DirectoryInfo(path)).GetFiles().Select(f => f.FullName))
                         Open(p);
                     foreach (string p in (new DirectoryInfo(path)).GetDirectories().Select(f => f.FullName))
                         Open(p);
+            }
+            else if (Directory.Exists(path) && checkBox2.Checked)
+            {
+                string decpath = Path.Combine(path, Path.GetFileNameWithoutExtension(path) + ".xml");
+                if (File.Exists(decpath)) //ctpk
+                {
+                    AddText(RTB_Output, string.Format("Building ctpk from {0}...", Path.GetFileName(path)));
+                    Ctpk.Create(path);
+                    AddLine(RTB_Output, "Complete!");
+                }
+                else if (Directory.Exists(path) && File.Exists($"{path}.bch")) //bch
+                {
+                    AddText(RTB_Output, string.Format("Importing textures to {0}...", Path.GetFileName(path)));
+                    Scene = H3D.Open(File.ReadAllBytes($"{path}.bch"));
+                    if (Scene.Models.Count > 0)
+                    {
+                        AddLine(RTB_Output, "Failure!, Model file found.");
+                    }
+                    else
+                    {
+                        for (int i = 0; i < Scene.Textures.Count; i++)
+                        {
+                            string Filename = Path.Combine(path, $"{Scene.Textures[i].Name}.png");
+                            if (File.Exists(Filename))
+                            {
+                                H3DTexture Texture = new H3DTexture(Filename);
+                                Scene.Textures[i].ReplaceData(Texture);
+                                H3D.Save($"{path}.bch", Scene);
+                            }
+                        }
+                        AddLine(RTB_Output, "Complete!");
+                    }
+                }
             }
             else if (File.Exists(path))
             {
@@ -221,7 +256,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                         {
                             File.WriteAllBytes(decpath, filedata);
                             AddLine(RTB_Output, string.Format("Successfully decompressed {0}.", Path.GetFileName(decpath)));
-                            if (File.Exists(decpath))
+                            if (File.Exists(decpath) && checkBox1.Checked)
                                 Open(decpath);
                         }
                         else
@@ -240,7 +275,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                         AddLine(RTB_Output, string.Format("Unable to automatically decompress {0}.", Path.GetFileName(path)));
                         Console.WriteLine(ex.Message);
                     }
-                    if (File.Exists(decpath))
+                    if (File.Exists(decpath) && checkBox1.Checked)
                         Open(decpath);
                 }
                 else if (ext == ".bin")
@@ -270,16 +305,21 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                     Ctpk.Read(path);
                     AddLine(RTB_Output, "Complete!");
                 }
-                else if (ext == ".bch")
+                else if (ext == ".bch" || ext == ".t" || ext == ".bcml" || ext == ".m")
                 {
                     AddText(RTB_Output, string.Format("Extracting textures from {0}...", Path.GetFileName(path)));
-                    Scene = H3D.Open(File.ReadAllBytes(path));
+                    if (ext == ".t" || ext == ".bcmdl" || ext == ".m")
+                    {
+                        Scene = SPICA.Formats.CtrGfx.Gfx.Open(path).ToH3D();
+                    }
+                    else
+                    {
+                        Scene = H3D.Open(File.ReadAllBytes(path));
+                    }
                     TextureManager.Textures = Scene.Textures;
                     for (int i = 0; i < Scene.Textures.Count; i++)
                     {
-                        string FileName = Path.GetFileNameWithoutExtension(path);
-                        string PathName = Path.GetDirectoryName(path);
-                        FileName = Path.Combine(PathName, $"{FileName}_");
+                        string FileName = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path);
                         Directory.CreateDirectory(FileName);
                         FileName = Path.Combine(FileName, $"{Scene.Textures[i].Name}.png");
                         TextureManager.GetTexture(i).Save(FileName);
