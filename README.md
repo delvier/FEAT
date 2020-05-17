@@ -8,7 +8,7 @@ Credit to [ctpktool](https://github.com/polaris-/ctpktool), [DSDecmp](https://gi
 
 ## Velouria Forked FEAT v1.9
 - Added option to disable automatic texture extracting
-- Added support for gfx texture contianers
+- Added support for gfx texture containers
 - Added basic texture importing for bch
 - Added ctpk rebuilding
 
