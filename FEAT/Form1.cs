@@ -8,12 +8,15 @@ using System.Threading;
 using System.Windows.Forms;
 using DSDecmp.Formats.Nitro;
 using ctpktool;
-using BCH;
+using SPICA.Formats.CtrH3D;
+using SPICA.Formats.CtrH3D.Texture;
+using SPICA.WinForms;
 
 namespace Fire_Emblem_Awakening_Archive_Tool
 {
     public partial class Form1 : Form
     {
+        private static H3D Scene;
         public Form1()
         {
             InitializeComponent();
@@ -149,7 +152,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                     File.WriteAllBytes(path + ".lz", cmp2);
                     AddLine(RTB_Output, string.Format("LZ13 Extended compressed {0} to {1}", Path.GetFileName(path), Path.GetFileName(path) + ".lz"));
                 }
-                else if (ModifierKeys == Keys.Control) //&& (MessageBox.Show("Compress " + path + "?", "Prompt", MessageBoxButtons.YesNo, MessageBoxIcon.Asterisk) == DialogResult.Yes))
+                else if (ModifierKeys == Keys.Control)
                 {
                     var cmp = LZ11Compress(File.ReadAllBytes(path));
                     byte[] cmp2 = new byte[cmp.Length + 4];
@@ -270,7 +273,18 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                 else if (ext == ".bch")
                 {
                     AddText(RTB_Output, string.Format("Extracting textures from {0}...", Path.GetFileName(path)));
-                    AddLine(RTB_Output, BCHTool.parseBCH(path) ? "Complete!" : "Failure!");
+                    Scene = H3D.Open(File.ReadAllBytes(path));
+                    TextureManager.Textures = Scene.Textures;
+                    for (int i = 0; i < Scene.Textures.Count; i++)
+                    {
+                        string FileName = Path.GetFileNameWithoutExtension(path);
+                        string PathName = Path.GetDirectoryName(path);
+                        FileName = Path.Combine(PathName, $"{FileName}_");
+                        Directory.CreateDirectory(FileName);
+                        FileName = Path.Combine(FileName, $"{Scene.Textures[i].Name}.png");
+                        TextureManager.GetTexture(i).Save(FileName);
+                    }
+                    AddLine(RTB_Output, "Complete!");
                 }
                 else if (ext == ".bfnt")
                 {

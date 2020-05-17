@@ -17,3 +17,15 @@ C:\Users\moonl\Desktop\FEAT-master\FEAT\obj\x86\Debug\FEAT.pdb
 C:\Users\moonl\Desktop\FEAT-master\FEAT\bin\Debug\ETC1.dll
 C:\Users\moonl\Desktop\FEAT-master\FEAT\bin\Debug\FEAT.exe
 C:\Users\moonl\Desktop\FEAT-master\FEAT\bin\Debug\FEAT.pdb
+D:\GitHub\FEAT\FEAT\bin\Debug\FEAT.exe
+D:\GitHub\FEAT\FEAT\bin\Debug\FEAT.pdb
+D:\GitHub\FEAT\FEAT\obj\x86\Debug\FEAT.csprojAssemblyReference.cache
+D:\GitHub\FEAT\FEAT\obj\x86\Debug\Fire_Emblem_Awakening_Archive_Tool.Form1.resources
+D:\GitHub\FEAT\FEAT\obj\x86\Debug\Fire_Emblem_Awakening_Archive_Tool.Properties.Resources.resources
+D:\GitHub\FEAT\FEAT\obj\x86\Debug\FEAT.csproj.GenerateResource.cache
+D:\GitHub\FEAT\FEAT\obj\x86\Debug\FEAT.csproj.CoreCompileInputs.cache
+D:\GitHub\FEAT\FEAT\obj\x86\Debug\FEAT.exe
+D:\GitHub\FEAT\FEAT\obj\x86\Debug\FEAT.pdb
+D:\GitHub\FEAT\FEAT\bin\Debug\FEAT.exe.config
+D:\GitHub\FEAT\FEAT\bin\Debug\SPICA.dll
+D:\GitHub\FEAT\FEAT\obj\x86\Debug\FEAT.csproj.CopyComplete
