@@ -13,6 +13,7 @@ using SPICA.Formats.CtrH3D.Texture;
 using SPICA.Formats.CtrGfx;
 using SPICA.WinForms;
 using SPICA.Formats.CtrGfx.Texture;
+using GovanifY.Utility;
 
 namespace Fire_Emblem_Awakening_Archive_Tool
 {
@@ -123,44 +124,54 @@ namespace Fire_Emblem_Awakening_Archive_Tool
 
         private void Open(string path)
         {
-            if (Directory.Exists(path) && !checkBox2.Checked)
+            if (Directory.Exists(path))
             {
+                if (checkBox2.Checked)
+                {
+                    string decpath = Path.Combine(path, Path.GetFileNameWithoutExtension(path) + ".xml");
+                    if (File.Exists(decpath)) //ctpk
+                    {
+                        AddText(RTB_Output, string.Format("Building ctpk from {0}...", Path.GetFileName(path)));
+                        Ctpk.Create(path);
+                        AddLine(RTB_Output, "Complete!");
+                    }
+                    else if (Directory.Exists(path) && File.Exists($"{path}.bch")) //bch
+                    {
+                        AddText(RTB_Output, string.Format("Importing textures to {0}...", Path.GetFileName(path)));
+                        Scene = H3D.Open(File.ReadAllBytes($"{path}.bch"));
+                        if (Scene.Models.Count > 0)
+                        {
+                            AddLine(RTB_Output, "Failure!, Model file found.");
+                        }
+                        else
+                        {
+                            for (int i = 0; i < Scene.Textures.Count; i++)
+                            {
+                                string Filename = Path.Combine(path, $"{Scene.Textures[i].Name}.png");
+                                if (File.Exists(Filename))
+                                {
+                                    H3DTexture Texture = new H3DTexture(Filename);
+                                    Scene.Textures[i].ReplaceData(Texture);
+                                    H3D.Save($"{path}.bch", Scene);
+                                }
+                            }
+                            AddLine(RTB_Output, "Complete!");
+                        }
+                    }
+                }
+                else if (ModifierKeys == Keys.Control)
+                {
+                    AddText(RTB_Output, string.Format("Building ARC from {0}...", Path.GetFileName(path)));
+                    string outfile = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".arc";
+                    CreateFireEmblemArchive(path, outfile);
+                    AddLine(RTB_Output, "Complete!");
+                }
+                else
+                {
                     foreach (string p in (new DirectoryInfo(path)).GetFiles().Select(f => f.FullName))
                         Open(p);
                     foreach (string p in (new DirectoryInfo(path)).GetDirectories().Select(f => f.FullName))
                         Open(p);
-            }
-            else if (Directory.Exists(path) && checkBox2.Checked)
-            {
-                string decpath = Path.Combine(path, Path.GetFileNameWithoutExtension(path) + ".xml");
-                if (File.Exists(decpath)) //ctpk
-                {
-                    AddText(RTB_Output, string.Format("Building ctpk from {0}...", Path.GetFileName(path)));
-                    Ctpk.Create(path);
-                    AddLine(RTB_Output, "Complete!");
-                }
-                else if (Directory.Exists(path) && File.Exists($"{path}.bch")) //bch
-                {
-                    AddText(RTB_Output, string.Format("Importing textures to {0}...", Path.GetFileName(path)));
-                    Scene = H3D.Open(File.ReadAllBytes($"{path}.bch"));
-                    if (Scene.Models.Count > 0)
-                    {
-                        AddLine(RTB_Output, "Failure!, Model file found.");
-                    }
-                    else
-                    {
-                        for (int i = 0; i < Scene.Textures.Count; i++)
-                        {
-                            string Filename = Path.Combine(path, $"{Scene.Textures[i].Name}.png");
-                            if (File.Exists(Filename))
-                            {
-                                H3DTexture Texture = new H3DTexture(Filename);
-                                Scene.Textures[i].ReplaceData(Texture);
-                                H3D.Save($"{path}.bch", Scene);
-                            }
-                        }
-                        AddLine(RTB_Output, "Complete!");
-                    }
                 }
             }
             else if (File.Exists(path))
@@ -412,6 +423,134 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             }
 
             AddLine(RTB_Output, "Complete!");
+        }
+
+        private static void CreateFireEmblemArchive(string outdir, string newname)
+        {
+            Console.WriteLine("Creating archive {0}", Path.GetFileName(newname));
+            FileStream newfilestream = File.Create(newname);
+            string[] files = Directory.GetFiles(outdir);
+
+            uint FileCount = (uint)files.Length;
+            Console.WriteLine("{0} files detected!", FileCount);
+
+            var ShiftJIS = Encoding.GetEncoding(932);
+
+            BinaryStream newFile = new BinaryStream(newfilestream);
+
+            MemoryStream infos = new MemoryStream();
+            BinaryWriter FileInfos = new BinaryWriter(infos);
+
+
+            Console.WriteLine("Creating dummy header...");
+            newFile.Write(0);
+
+            newFile.Write(0);
+            newFile.Write(FileCount);
+            newFile.Write(FileCount + 3);
+
+            byte nil = 0;
+            for (int i = 0; i < 0x70; i++)
+            {
+                newFile.Write(nil);
+            }
+            int z = 0;
+            foreach (string fileName in files)
+            {
+                Console.WriteLine("Adding file {0}...", Path.GetFileName(fileName));
+                byte[] filetoadd = File.ReadAllBytes(fileName);
+                uint fileoff = (uint)newFile.Tell();
+                newFile.Write(filetoadd);
+                while ((int)newFile.Tell() % 128 != 0)
+                {
+                    newFile.Write(nil);
+                }
+                FileInfos.Write(0);
+                FileInfos.Write(z);
+                FileInfos.Write(filetoadd.Length);
+                FileInfos.Write(fileoff - 0x80);
+                z++;
+            }
+
+            long countinfo = newFile.Tell();
+            newFile.Write(files.Length);
+            long infopointer = newFile.Tell();
+            Console.WriteLine("Adding dummy FileInfos...");
+
+            infos.Seek(0, SeekOrigin.Begin);
+            var infopos = newFile.Tell();
+            newFile.Write(infos.ToArray());
+
+            Console.WriteLine("Rewriting header...");
+            long metapos = newFile.Tell();
+            newFile.Seek(4, SeekOrigin.Begin);
+            newFile.Write((uint)metapos - 0x20);
+
+            newFile.Seek(metapos, SeekOrigin.Begin);
+
+            Console.WriteLine("Adding FileInfos pointer...");
+            for (int i = 0; i < files.Length; i++)
+            {
+                newFile.Write((uint)((infopointer + i * 16) - 0x20));
+            }
+
+            Console.WriteLine("Adding Advanced pointers...");
+
+            newFile.Write((uint)0x60);
+            newFile.Write(0);
+            newFile.Write((uint)(countinfo - 0x20));
+            newFile.Write((uint)5);
+            newFile.Write((uint)(countinfo + 4 - 0x20));
+            newFile.Write((uint)0xB);
+            for (int i = 0; i < files.Length; i++)
+            {
+                newFile.Write((uint)((countinfo + 4) + i * 16) - 0x20);
+
+                if (i == 0)
+                {
+                    newFile.Write((uint)0x10);
+                }
+                else
+                {
+                    if (i == 1)
+                    {
+                        newFile.Write((uint)0x1C);
+                    }
+                    else
+                    {
+                        newFile.Write((uint)(0x1C + (10 * (i - 1))));
+                    }
+                }
+            }
+
+            Console.WriteLine("Adding Filenames...");
+            var datcount = new byte[] { 0x44, 0x61, 0x74, 0x61, 0x00, 0x43, 0x6F, 0x75, 0x6E, 0x74, 0x00, 0x49, 0x6E, 0x66, 0x6F, 0x00 };
+            newFile.Write(datcount);
+            int y = 0;
+
+            foreach (string fileName in files)
+            {
+                FileInfos.Seek(y * 16, SeekOrigin.Begin);
+                long namepos = newFile.Tell();
+                FileInfos.Write((uint)namepos - 0x20);
+                newFile.Write(ShiftJIS.GetBytes(Path.GetFileName(fileName)));
+                newFile.Write(nil);
+                y++;
+            }
+            Console.WriteLine("Rewriting FileInfos...");
+            newFile.Seek(infopos, SeekOrigin.Begin);
+
+            infos.Seek(0, SeekOrigin.Begin);
+            newFile.Write(infos.ToArray());
+
+            Console.WriteLine("Finishing the job...");
+            newFile.Seek(0, SeekOrigin.Begin);
+            UInt32 newlength = (UInt32)newFile.BaseStream.Length;
+            newFile.Write(newlength);
+
+            Console.WriteLine("Done!");
+            newFile.Close();
+
         }
 
         private byte[] MakeFireEmblemMessageArchive(string[] lines)
@@ -683,9 +822,14 @@ namespace Fire_Emblem_Awakening_Archive_Tool
         {
             RTB_Output.Clear();
             RTB_Output.Text = "Open a file, or Drag/Drop several! Click this box to clear its text." + Environment.NewLine;
-            AddLine(RTB_Output, string.Format("Ctrl   + Drag/Drop for normal compression."));
-            AddLine(RTB_Output, string.Format("Alt    + Drag/Drop for extended compression."));
-            AddLine(RTB_Output, string.Format("Shift + Check lz13 Compression Header." + Environment.NewLine));
+            AddLine(RTB_Output, string.Format("####################################################"));
+            AddLine(RTB_Output, string.Format("Ctrl   + Drag/Drop File for normal compression."));
+            AddLine(RTB_Output, string.Format("Alt    + Drag/Drop File for extended compression."));
+            AddLine(RTB_Output, string.Format("Shift + Drag/Drop File for Check lz13 Compression Header."));
+            AddLine(RTB_Output, string.Format("Ctrl   + Drag/Drop Folder for Arc builder"));
+            AddLine(RTB_Output, string.Format("Import Mode + Drag/Drop Folder for Replace Textures in .bch"));
+            AddLine(RTB_Output, string.Format("Drag and Drop extacted ctpk Folder to rebuild .ctpk"));
+            AddLine(RTB_Output, string.Format("####################################################"));
         }
     }
 }

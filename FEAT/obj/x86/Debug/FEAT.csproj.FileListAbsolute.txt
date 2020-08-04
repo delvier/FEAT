@@ -27,5 +27,4 @@ D:\GitHub\FEAT\FEAT\obj\x86\Debug\FEAT.csproj.CoreCompileInputs.cache
 D:\GitHub\FEAT\FEAT\obj\x86\Debug\FEAT.exe
 D:\GitHub\FEAT\FEAT\obj\x86\Debug\FEAT.pdb
 D:\GitHub\FEAT\FEAT\bin\Debug\FEAT.exe.config
-D:\GitHub\FEAT\FEAT\bin\Debug\SPICA.dll
-D:\GitHub\FEAT\FEAT\obj\x86\Debug\FEAT.csproj.CopyComplete
+D:\GitHub\FEAT\FEAT\obj\x86\Debug\FEAT.csproj.Fody.CopyLocal.cache

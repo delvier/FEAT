@@ -4,7 +4,17 @@
 
 Fire Emblem Archive Tool (A tool to automatically extract data from 3DS Fire Emblem archives)
 
-Credit to [ctpktool](https://github.com/polaris-/ctpktool), [DSDecmp](https://github.com/einstein95/dsdecmp), and [SPICA](https://github.com/gdkchan/SPICA) from which code is used for ctpk unpacking, LZ decompression, and bch parsing respectively. 
+Credit to: 
+[ctpktool](https://github.com/polaris-/ctpktool) for ctpk packing and unpacking,
+[DSDecmp](https://github.com/einstein95/dsdecmp) for LZ decompression,
+[SPICA](https://github.com/gdkchan/SPICA) for bch/gfx Parsing,
+[FEIF_Arc](https://github.com/GovanifY/FEIF_ARC) for Arc packing and unpacking
+[SciresM](https://github.com/SciresM) for the original FEAT code
+
+## Velouria Forked FEAT v2.0
+- Added Arc rebuilding
+- Expanded list of options
+- Packed .dll into exe
 
 ## Velouria Forked FEAT v1.9
 - Added option to disable automatic texture extracting
@@ -13,7 +23,7 @@ Credit to [ctpktool](https://github.com/polaris-/ctpktool), [DSDecmp](https://gi
 - Added ctpk rebuilding
 
 ## Velouria Forked FEAT v1.8
-- Replaced FEAT's bch parseing with Spica's
+- Replaced FEAT's bch parsing with Spica's
 
 ## Velouria Forked FEAT v1.7
 - Added lz13 Header check 
