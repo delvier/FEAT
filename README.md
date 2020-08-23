@@ -11,6 +11,9 @@ Credit to:
 [FEIF_Arc](https://github.com/GovanifY/FEIF_ARC) for Arc packing and unpacking
 [SciresM](https://github.com/SciresM) for the original FEAT code
 
+## Veloruia Forked FEAT v2.1
+- Fixed Arc rebuilding code
+
 ## Velouria Forked FEAT v2.0
 - Added Arc rebuilding
 - Expanded list of options

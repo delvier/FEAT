@@ -494,7 +494,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                 newFile.Write((uint)((infopointer + i * 16) - 0x20));
             }
 
-            Console.WriteLine("Adding Advanced pointers...");
+            Console.WriteLine("Adding Dummy Pointer 2 Region...");
 
             newFile.Write((uint)0x60);
             newFile.Write(0);
@@ -502,10 +502,10 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             newFile.Write((uint)5);
             newFile.Write((uint)(countinfo + 4 - 0x20));
             newFile.Write((uint)0xB);
+            long ptr2region = newfilestream.Position;
             for (int i = 0; i < files.Length; i++)
             {
                 newFile.Write((uint)((countinfo + 4) + i * 16) - 0x20);
-
                 if (i == 0)
                 {
                     newFile.Write((uint)0x10);
@@ -523,10 +523,11 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                 }
             }
 
-            Console.WriteLine("Adding Filenames...");
+            Console.WriteLine("Adding Filenames and Rewriting Pointer 2 Region...");
             var datcount = new byte[] { 0x44, 0x61, 0x74, 0x61, 0x00, 0x43, 0x6F, 0x75, 0x6E, 0x74, 0x00, 0x49, 0x6E, 0x66, 0x6F, 0x00 };
             newFile.Write(datcount);
             int y = 0;
+            int nameloc = 16;
 
             foreach (string fileName in files)
             {
@@ -535,6 +536,13 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                 FileInfos.Write((uint)namepos - 0x20);
                 newFile.Write(ShiftJIS.GetBytes(Path.GetFileName(fileName)));
                 newFile.Write(nil);
+                long NameEnd = newfilestream.Position;
+                long pointerpos = (ptr2region + 4 + (y * 8));
+                newFile.Seek(pointerpos, SeekOrigin.Begin);
+                newFile.Write(nameloc);
+                newFile.Seek(NameEnd, SeekOrigin.Begin);
+                byte[] onlyfilename = ShiftJIS.GetBytes(Path.GetFileName(fileName));
+                nameloc = nameloc + onlyfilename.Length + 1;
                 y++;
             }
             Console.WriteLine("Rewriting FileInfos...");
