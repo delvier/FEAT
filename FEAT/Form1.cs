@@ -126,16 +126,9 @@ namespace Fire_Emblem_Awakening_Archive_Tool
         {
             if (Directory.Exists(path))
             {
-                if (checkBox2.Checked)
+                if (B_BuildTexture.Checked)
                 {
-                    string decpath = Path.Combine(path, Path.GetFileNameWithoutExtension(path) + ".xml");
-                    if (File.Exists(decpath)) //ctpk
-                    {
-                        AddText(RTB_Output, string.Format("Building ctpk from {0}...", Path.GetFileName(path)));
-                        Ctpk.Create(path);
-                        AddLine(RTB_Output, "Complete!");
-                    }
-                    else if (Directory.Exists(path) && File.Exists($"{path}.bch")) //bch
+                    if (Directory.Exists(path) && File.Exists($"{path}.bch")) //bch
                     {
                         AddText(RTB_Output, string.Format("Importing textures to {0}...", Path.GetFileName(path)));
                         Scene = H3D.Open(File.ReadAllBytes($"{path}.bch"));
@@ -155,6 +148,20 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                                     H3D.Save($"{path}.bch", Scene);
                                 }
                             }
+                            AddLine(RTB_Output, "Complete!");
+                        }
+                    }
+                    else //ctpk
+                    {
+                        string[] filelist = Directory.GetFiles(path, "*.xml");
+                        if (filelist == null || filelist.Length == 0)
+                        {
+                            return;
+                        }
+                        else
+                        {
+                            AddText(RTB_Output, string.Format("Building ctpk from {0}...", Path.GetFileName(path)));
+                            Ctpk.Create(path);
                             AddLine(RTB_Output, "Complete!");
                         }
                     }
@@ -191,8 +198,21 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                     byte[] cmp2 = new byte[cmp.Length + 4];
 
                     cmp2[0] = 0x13;
-                    cmp2[1] = 0xff;
-                    cmp2[2] = 0xff;
+                    if (ext == ".arc")
+                    {
+                        int test = Convert.ToInt32(cmp[1] << 4);
+                        byte[] test2 = BitConverter.GetBytes(test);
+                        if (test2[0] == 64)
+                            cmp2[1] = Convert.ToByte(cmp[1] + 3);
+                        else
+                            cmp2[1] = Convert.ToByte(cmp[1] + 5);
+                        //AddLine(RTB_Output, string.Format("Int is {0}", test2));
+                    }
+                    else
+                    {
+                        cmp2[1] = 0xff;
+                        cmp2[2] = 0xff;
+                    }
                     Array.Copy(cmp, 0, cmp2, 4, cmp.Length);
                     //Array.Copy(cmp, 1, cmp2, 1, 3);
                     File.WriteAllBytes(path + ".lz", cmp2);
@@ -267,7 +287,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                         {
                             File.WriteAllBytes(decpath, filedata);
                             AddLine(RTB_Output, string.Format("Successfully decompressed {0}.", Path.GetFileName(decpath)));
-                            if (File.Exists(decpath) && checkBox1.Checked)
+                            if (File.Exists(decpath) && B_AutoExtract.Checked)
                                 Open(decpath);
                         }
                         else
@@ -286,7 +306,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                         AddLine(RTB_Output, string.Format("Unable to automatically decompress {0}.", Path.GetFileName(path)));
                         Console.WriteLine(ex.Message);
                     }
-                    if (File.Exists(decpath) && checkBox1.Checked)
+                    if (File.Exists(decpath) && B_AutoExtract.Checked)
                         Open(decpath);
                 }
                 else if (ext == ".bin")
@@ -316,7 +336,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                     Ctpk.Read(path);
                     AddLine(RTB_Output, "Complete!");
                 }
-                else if (ext == ".bch" || ext == ".t" || ext == ".bcml" || ext == ".m")
+                else if (ext == ".bch" || ext == ".t" || ext == ".bcmdl" || ext == ".m")
                 {
                     AddText(RTB_Output, string.Format("Extracting textures from {0}...", Path.GetFileName(path)));
                     if (ext == ".t" || ext == ".bcmdl" || ext == ".m")
@@ -425,11 +445,11 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             AddLine(RTB_Output, "Complete!");
         }
 
-        private static void CreateFireEmblemArchive(string outdir, string newname)
+        private void CreateFireEmblemArchive(string outdir, string newname)
         {
             Console.WriteLine("Creating archive {0}", Path.GetFileName(newname));
             FileStream newfilestream = File.Create(newname);
-            string[] files = Directory.GetFiles(outdir);
+            string[] files = Directory.GetFiles(outdir, "*", SearchOption.AllDirectories);
 
             uint FileCount = (uint)files.Length;
             Console.WriteLine("{0} files detected!", FileCount);
@@ -450,30 +470,59 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             newFile.Write(FileCount + 3);
 
             byte nil = 0;
-            for (int i = 0; i < 0x70; i++)
+            if (B_ArcPadding.Checked)
             {
-                newFile.Write(nil);
+                for (int i = 0; i < 0x70; i++)
+                {
+                    newFile.Write(nil);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < 0x10; i++)
+                {
+                    newFile.Write(nil);
+                }
             }
             int z = 0;
             foreach (string fileName in files)
             {
-                Console.WriteLine("Adding file {0}...", Path.GetFileName(fileName));
+                Console.WriteLine("Adding file {0}...", fileName.Replace(outdir + Path.DirectorySeparatorChar, "").Replace("\\", "/"));
                 byte[] filetoadd = File.ReadAllBytes(fileName);
                 uint fileoff = (uint)newFile.Tell();
-                newFile.Write(filetoadd);
-                while ((int)newFile.Tell() % 128 != 0)
+                newFile.Write(filetoadd); //File is written to arc
+                uint alignment = 0;
+                if (!B_Align0.Checked)
                 {
-                    newFile.Write(nil);
+                    if (B_Align16.Checked)
+                        alignment = 16;
+                    if (B_Align32.Checked)
+                        alignment = 32;
+                    if (B_Align64.Checked)
+                        alignment = 64;
+                    if (B_Align128.Checked)
+                        alignment = 128;
+                    while ((int)newFile.Tell() % alignment != 0)
+                    {
+                        newFile.Write(nil); //writes between file padding
+                    }
                 }
                 FileInfos.Write(0);
                 FileInfos.Write(z);
                 FileInfos.Write(filetoadd.Length);
-                FileInfos.Write(fileoff - 0x80);
+                if (B_ArcPadding.Checked)
+                {
+                    FileInfos.Write(fileoff - 0x80);
+                }
+                else
+                {
+                    FileInfos.Write(fileoff - 0x20);
+                }
                 z++;
             }
 
             long countinfo = newFile.Tell();
-            newFile.Write(files.Length);
+            newFile.Write(FileCount);
             long infopointer = newFile.Tell();
             Console.WriteLine("Adding dummy FileInfos...");
 
@@ -489,21 +538,28 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             newFile.Seek(metapos, SeekOrigin.Begin);
 
             Console.WriteLine("Adding FileInfos pointer...");
-            for (int i = 0; i < files.Length; i++)
+            for (int i = 0; i < FileCount; i++)
             {
                 newFile.Write((uint)((infopointer + i * 16) - 0x20));
             }
 
             Console.WriteLine("Adding Dummy Pointer 2 Region...");
 
-            newFile.Write((uint)0x60);
+            if (B_ArcPadding.Checked)
+            {
+                newFile.Write((uint)0x60);
+            }
+            else
+            {
+                newFile.Write((uint)0x0);
+            }
             newFile.Write(0);
             newFile.Write((uint)(countinfo - 0x20));
             newFile.Write((uint)5);
             newFile.Write((uint)(countinfo + 4 - 0x20));
             newFile.Write((uint)0xB);
             long ptr2region = newfilestream.Position;
-            for (int i = 0; i < files.Length; i++)
+            for (int i = 0; i < FileCount; i++)
             {
                 newFile.Write((uint)((countinfo + 4) + i * 16) - 0x20);
                 if (i == 0)
@@ -534,14 +590,14 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                 FileInfos.Seek(y * 16, SeekOrigin.Begin);
                 long namepos = newFile.Tell();
                 FileInfos.Write((uint)namepos - 0x20);
-                newFile.Write(ShiftJIS.GetBytes(Path.GetFileName(fileName)));
+                newFile.Write(ShiftJIS.GetBytes(fileName.Replace(outdir + Path.DirectorySeparatorChar, "").Replace("\\", "/")));
                 newFile.Write(nil);
                 long NameEnd = newfilestream.Position;
                 long pointerpos = (ptr2region + 4 + (y * 8));
                 newFile.Seek(pointerpos, SeekOrigin.Begin);
                 newFile.Write(nameloc);
                 newFile.Seek(NameEnd, SeekOrigin.Begin);
-                byte[] onlyfilename = ShiftJIS.GetBytes(Path.GetFileName(fileName));
+                byte[] onlyfilename = ShiftJIS.GetBytes(fileName.Replace(outdir + Path.DirectorySeparatorChar, "").Replace("\\", "/"));
                 nameloc = nameloc + onlyfilename.Length + 1;
                 y++;
             }
@@ -830,14 +886,63 @@ namespace Fire_Emblem_Awakening_Archive_Tool
         {
             RTB_Output.Clear();
             RTB_Output.Text = "Open a file, or Drag/Drop several! Click this box to clear its text." + Environment.NewLine;
-            AddLine(RTB_Output, string.Format("####################################################"));
+            
+        }
+
+        private void B_Help_Click(object sender, EventArgs e)
+        {
+            AddLine(RTB_Output, string.Format(Environment.NewLine + "#####      FEAT Help Menu      #####"));
+            AddLine(RTB_Output, string.Format("Drag and Drop Files to open them"));
             AddLine(RTB_Output, string.Format("Ctrl   + Drag/Drop File for normal compression."));
             AddLine(RTB_Output, string.Format("Alt    + Drag/Drop File for extended compression."));
             AddLine(RTB_Output, string.Format("Shift + Drag/Drop File for Check lz13 Compression Header."));
-            AddLine(RTB_Output, string.Format("Ctrl   + Drag/Drop Folder for Arc builder"));
-            AddLine(RTB_Output, string.Format("Import Mode + Drag/Drop Folder for Replace Textures in .bch"));
-            AddLine(RTB_Output, string.Format("Drag and Drop extacted ctpk Folder to rebuild .ctpk"));
-            AddLine(RTB_Output, string.Format("####################################################"));
+            AddLine(RTB_Output, string.Format("Ctrl   + Drag/Drop Folder for Arc builder."));
+            AddLine(RTB_Output, string.Format("#####     Additonal Options    #####"));
+            AddLine(RTB_Output, string.Format("Auto Extract will extract textures, arc, text, after decompression."));
+            AddLine(RTB_Output, string.Format("Build Textures + Drag/Drop Folder for Replace Textures in .bch"));
+            AddLine(RTB_Output, string.Format("Build Textures + Drag/Drop extacted ctpk Folder to rebuild .ctpk"));
+            AddLine(RTB_Output, string.Format("ARC Padding adds Padding to build arc file for Fates."));
+            //AddLine(RTB_Output, string.Format("Awk DLC ARC adds info needed for dlc arcs to work."+ Environment.NewLine));
+        }
+
+        private void B_Align128_Click(object sender, EventArgs e)
+        {
+            B_Align0.Checked = false;
+            B_Align16.Checked = false;
+            B_Align32.Checked = false;
+            B_Align64.Checked = false;
+        }
+
+        private void B_Align64_Click(object sender, EventArgs e)
+        {
+            B_Align0.Checked = false;
+            B_Align16.Checked = false;
+            B_Align32.Checked = false;
+            B_Align128.Checked = false;
+        }
+
+        private void B_Align32_Click(object sender, EventArgs e)
+        {
+            B_Align0.Checked = false;
+            B_Align16.Checked = false;
+            B_Align64.Checked = false;
+            B_Align128.Checked = false;
+        }
+
+        private void B_Align16_Click(object sender, EventArgs e)
+        {
+            B_Align0.Checked = false;
+            B_Align32.Checked = false;
+            B_Align64.Checked = false;
+            B_Align128.Checked = false;
+        }
+
+        private void B_Align0_Click(object sender, EventArgs e)
+        {
+            B_Align16.Checked = false;
+            B_Align32.Checked = false;
+            B_Align64.Checked = false;
+            B_Align128.Checked = false;
         }
     }
 }
