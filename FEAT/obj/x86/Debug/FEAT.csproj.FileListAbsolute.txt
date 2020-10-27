@@ -28,3 +28,5 @@ D:\GitHub\FEAT\FEAT\obj\x86\Debug\FEAT.exe
 D:\GitHub\FEAT\FEAT\obj\x86\Debug\FEAT.pdb
 D:\GitHub\FEAT\FEAT\bin\Debug\FEAT.exe.config
 D:\GitHub\FEAT\FEAT\obj\x86\Debug\FEAT.csproj.Fody.CopyLocal.cache
+D:\GitHub\FEAT\FEAT\bin\Debug\aset_extract.rb
+D:\GitHub\FEAT\FEAT\bin\Debug\asset_pack.rb

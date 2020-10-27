@@ -14,6 +14,7 @@ using SPICA.Formats.CtrGfx;
 using SPICA.WinForms;
 using SPICA.Formats.CtrGfx.Texture;
 using GovanifY.Utility;
+using System.Diagnostics;
 
 namespace Fire_Emblem_Awakening_Archive_Tool
 {
@@ -28,6 +29,15 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             RTB_Output.DragEnter += Form1_DragEnter;
             DragDrop += Form1_DragDrop;
             RTB_Output.DragDrop += Form1_DragDrop;
+            if (!TestforRuby())
+            {
+                B_RubyScript.Enabled = false;
+                AddLine(RTB_Output, "Warning: Ruby not found, disabling ruby script functions");
+            }
+            else if (TestforRuby())
+            {
+                B_RubyScript.Checked = true;
+            }
         }
 
         private volatile int threads;
@@ -184,6 +194,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             else if (File.Exists(path))
             {
                 string ext = Path.GetExtension(path).ToLower();
+                string filename = Path.GetFileNameWithoutExtension(path).ToLower();
                 var yaz0 = false;
                 using (var fs = File.OpenRead(path))
                 {
@@ -323,6 +334,18 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                     {
                         AddLine(RTB_Output, string.Format("Successfully extracted Heroes Message Archive {0}", Path.GetFileName(path)));
                     }
+                    else if (B_RubyScript.Checked)
+                    {
+                        if (!File.Exists("asset_pack.rb"))
+                        {
+                            AddLine(RTB_Output, "Ruby Script Not Found");
+                        }
+                        else
+                        {
+                            RunRubyScript("asset_pack.rb", string.Format(" -u \"{0}\"", path));
+                            AddLine(RTB_Output, string.Format("Decompiled {0} to {1}", Path.GetFileName(path), Path.GetFileName(path) + ".txt"));
+                        }
+                    }
                 }
                 else if (ext == ".arc")
                 {
@@ -408,7 +431,116 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                             Array.Copy(cmp, 1, cmp2, 1, 3);
                             File.WriteAllBytes(outname + ".lz", cmp2);
                     }
+                    else if (B_RubyScript.Checked)
+                    {
+                        if (!File.Exists("asset_pack.rb"))
+                        {
+                            AddLine(RTB_Output, "Ruby Script Not Found");
+                        }
+                        else
+                        {
+                            string outfile = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path);
+                            RunRubyScript("asset_pack.rb", string.Format(" -p \"{0}\" \"{1}\"", path, outfile));
+
+                            var cmp = LZ11Compress(File.ReadAllBytes(outfile));
+                            byte[] cmp2 = new byte[cmp.Length + 4];
+                              
+                            cmp2[0] = 0x13;
+                            Array.Copy(cmp, 0, cmp2, 4, cmp.Length);
+                            Array.Copy(cmp, 1, cmp2, 1, 3);
+                            File.WriteAllBytes(outfile + ".lz", cmp2);
+                            AddLine(RTB_Output, string.Format("Compiled and compressed {0} to {1}", Path.GetFileName(path), Path.GetFileName(outfile)));
+                        }
+                    }
                 }
+                else if (filename == "rom1" || filename == "rom2" || filename == "rom3" || filename == "rom4" || filename == "rom5" || filename == "rom6")
+                {
+                    if (B_RubyScript.Checked)
+                    {
+                        if (!File.Exists("asset_pack.rb"))
+                        {
+                            AddLine(RTB_Output, "Ruby Script Not Found");
+                        }
+                        else
+                        {
+                            if (ext == ".txt")
+                            {
+                                string outfile = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path);
+                                RunRubyScript("asset_pack.rb", string.Format(" -p \"{0}\" \"{1}\"", path, outfile));
+
+                                var cmp = LZ11Compress(File.ReadAllBytes(outfile));
+                                byte[] cmp2 = new byte[cmp.Length + 4];
+
+                                cmp2[0] = 0x13;
+                                Array.Copy(cmp, 0, cmp2, 4, cmp.Length);
+                                Array.Copy(cmp, 1, cmp2, 1, 3);
+                                File.WriteAllBytes(outfile + ".lz", cmp2);
+                                AddLine(RTB_Output, string.Format("Compiled and compressed {0} to {1}", Path.GetFileName(path), Path.GetFileName(outfile) + ".lz"));
+                            }
+                            else
+                            {
+                                RunRubyScript("asset_pack.rb", string.Format(" -u \"{0}\"", path));
+                                AddLine(RTB_Output, string.Format("Decompiled {0} to {1}", Path.GetFileName(path), Path.GetFileName(path) + ".txt"));
+                            }
+                        }
+                    }
+                }
+                else if (filename == "aset" && B_RubyScript.Checked)
+                {
+                    if (ext == ".yml")
+                    {
+                        string outfile = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path);
+                        RunRubyScript("aset_extract.rb", string.Format(" -p \"{0}\" \"{1}\"", path, outfile));
+
+                        var cmp = LZ11Compress(File.ReadAllBytes(outfile));
+                        byte[] cmp2 = new byte[cmp.Length + 4];
+
+                        cmp2[0] = 0x13;
+                        Array.Copy(cmp, 0, cmp2, 4, cmp.Length);
+                        Array.Copy(cmp, 1, cmp2, 1, 3);
+                        File.WriteAllBytes(outfile + ".lz", cmp2);
+                        AddLine(RTB_Output, string.Format("Compiled and compressed {0} to {1}", Path.GetFileName(path), Path.GetFileName(outfile) + ".lz"));
+                    }
+                    else
+                    {
+                        RunRubyScript("aset_extract.rb", string.Format(" -u \"{0}\"", path));
+                        AddLine(RTB_Output, string.Format("Decompiled {0} to {1}", Path.GetFileName(path), Path.GetFileName(path) + ".txt"));
+                    }
+                }
+            }
+        }
+
+        private bool TestforRuby()
+        {
+            using (var proc = new Process())
+            {
+                try
+                {
+                    var startInfo = new ProcessStartInfo(@"ruby");
+                    startInfo.Arguments = "--version";
+                    startInfo.UseShellExecute = false;
+                    startInfo.CreateNoWindow = true;
+                    proc.StartInfo = startInfo;
+                    proc.Start();
+                }
+                catch (System.ComponentModel.Win32Exception)
+                {
+                    return false;
+                }
+                return true;
+            }
+        }
+
+        private void RunRubyScript(string filePath, string args)
+        {
+            using (var proc = new Process())
+            {
+                var startInfo = new ProcessStartInfo(@"ruby");
+                startInfo.Arguments = filePath + args;
+                startInfo.UseShellExecute = false;
+                startInfo.CreateNoWindow = true;
+                proc.StartInfo = startInfo;
+                proc.Start();
             }
         }
 
@@ -896,13 +1028,14 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             AddLine(RTB_Output, string.Format("Ctrl   + Drag/Drop File for normal compression."));
             AddLine(RTB_Output, string.Format("Alt    + Drag/Drop File for extended compression."));
             AddLine(RTB_Output, string.Format("Shift + Drag/Drop File for Check lz13 Compression Header."));
-            AddLine(RTB_Output, string.Format("Ctrl   + Drag/Drop Folder for Arc builder."));
-            AddLine(RTB_Output, string.Format("#####     Additonal Options    #####"));
+            AddLine(RTB_Output, string.Format("Ctrl   + Drag/Drop Folder for Arc builder." + Environment.NewLine));
+            AddLine(RTB_Output, string.Format("#####     Additonal Options     #####"));
             AddLine(RTB_Output, string.Format("Auto Extract will extract textures, arc, text, after decompression."));
             AddLine(RTB_Output, string.Format("Build Textures + Drag/Drop Folder for Replace Textures in .bch"));
             AddLine(RTB_Output, string.Format("Build Textures + Drag/Drop extacted ctpk Folder to rebuild .ctpk"));
             AddLine(RTB_Output, string.Format("ARC Padding adds Padding to build arc file for Fates."));
-            //AddLine(RTB_Output, string.Format("Awk DLC ARC adds info needed for dlc arcs to work."+ Environment.NewLine));
+            AddLine(RTB_Output, string.Format("ARC File Alignment adjusts the amount of padding added to align files"));
+            AddLine(RTB_Output, string.Format("Enable Ruby Script allows bin files to be decompiled to text based files"));
         }
 
         private void B_Align128_Click(object sender, EventArgs e)

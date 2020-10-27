@@ -20,7 +20,11 @@ Drag and Drop an Extract CTPK folder to rebuild the CTPK.<br />
 [DSDecmp](https://github.com/einstein95/dsdecmp) for LZ decompression,<br />
 [SPICA](https://github.com/gdkchan/SPICA) for bch/gfx Parsing,<br />
 [FEIF_Arc](https://github.com/GovanifY/FEIF_ARC) for Arc packing and unpacking<br />
-[SciresM](https://github.com/SciresM) for the original FEAT code
+[SciresM](https://github.com/SciresM) for the original FEAT code<br />
+AmbiguousPresence#4536 for the ruby script.
+
+## Velouria Forked FEAT v2.3
+- Integrated support for Ruby script 
 
 ## Velouria Forked FEAT v2.2
 - UI Overhual

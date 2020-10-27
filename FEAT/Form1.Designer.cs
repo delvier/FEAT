@@ -46,6 +46,7 @@
             this.B_Align32 = new System.Windows.Forms.ToolStripMenuItem();
             this.B_Align64 = new System.Windows.Forms.ToolStripMenuItem();
             this.B_Align128 = new System.Windows.Forms.ToolStripMenuItem();
+            this.B_RubyScript = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -121,7 +122,8 @@
             this.B_AutoExtract,
             this.B_BuildTexture,
             this.B_ArcPadding,
-            this.aRCFileAlignmentToolStripMenuItem});
+            this.aRCFileAlignmentToolStripMenuItem,
+            this.B_RubyScript});
             this.toolStripDropDownButton2.Image = ((System.Drawing.Image)(resources.GetObject("toolStripDropDownButton2.Image")));
             this.toolStripDropDownButton2.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripDropDownButton2.Name = "toolStripDropDownButton2";
@@ -169,7 +171,7 @@
             // 
             this.B_Align0.CheckOnClick = true;
             this.B_Align0.Name = "B_Align0";
-            this.B_Align0.Size = new System.Drawing.Size(180, 22);
+            this.B_Align0.Size = new System.Drawing.Size(123, 22);
             this.B_Align0.Text = "0 bytes";
             this.B_Align0.Click += new System.EventHandler(this.B_Align0_Click);
             // 
@@ -177,7 +179,7 @@
             // 
             this.B_Align16.CheckOnClick = true;
             this.B_Align16.Name = "B_Align16";
-            this.B_Align16.Size = new System.Drawing.Size(180, 22);
+            this.B_Align16.Size = new System.Drawing.Size(123, 22);
             this.B_Align16.Text = "16 bytes";
             this.B_Align16.Click += new System.EventHandler(this.B_Align16_Click);
             // 
@@ -185,7 +187,7 @@
             // 
             this.B_Align32.CheckOnClick = true;
             this.B_Align32.Name = "B_Align32";
-            this.B_Align32.Size = new System.Drawing.Size(180, 22);
+            this.B_Align32.Size = new System.Drawing.Size(123, 22);
             this.B_Align32.Text = "32 bytes";
             this.B_Align32.Click += new System.EventHandler(this.B_Align32_Click);
             // 
@@ -193,7 +195,7 @@
             // 
             this.B_Align64.CheckOnClick = true;
             this.B_Align64.Name = "B_Align64";
-            this.B_Align64.Size = new System.Drawing.Size(180, 22);
+            this.B_Align64.Size = new System.Drawing.Size(123, 22);
             this.B_Align64.Text = "64 bytes";
             this.B_Align64.Click += new System.EventHandler(this.B_Align64_Click);
             // 
@@ -203,9 +205,16 @@
             this.B_Align128.CheckOnClick = true;
             this.B_Align128.CheckState = System.Windows.Forms.CheckState.Checked;
             this.B_Align128.Name = "B_Align128";
-            this.B_Align128.Size = new System.Drawing.Size(180, 22);
+            this.B_Align128.Size = new System.Drawing.Size(123, 22);
             this.B_Align128.Text = "128 bytes";
             this.B_Align128.Click += new System.EventHandler(this.B_Align128_Click);
+            // 
+            // B_RubyScript
+            // 
+            this.B_RubyScript.CheckOnClick = true;
+            this.B_RubyScript.Name = "B_RubyScript";
+            this.B_RubyScript.Size = new System.Drawing.Size(180, 22);
+            this.B_RubyScript.Text = "Enable Ruby Script";
             // 
             // Form1
             // 
@@ -246,6 +255,7 @@
         private System.Windows.Forms.ToolStripMenuItem B_Align32;
         private System.Windows.Forms.ToolStripMenuItem B_Align64;
         private System.Windows.Forms.ToolStripMenuItem B_Align128;
+        private System.Windows.Forms.ToolStripMenuItem B_RubyScript;
     }
 }
 
