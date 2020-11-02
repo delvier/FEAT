@@ -40,13 +40,15 @@
             this.B_AutoExtract = new System.Windows.Forms.ToolStripMenuItem();
             this.B_BuildTexture = new System.Windows.Forms.ToolStripMenuItem();
             this.B_ArcPadding = new System.Windows.Forms.ToolStripMenuItem();
-            this.aRCFileAlignmentToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.B_Alignment = new System.Windows.Forms.ToolStripMenuItem();
             this.B_Align0 = new System.Windows.Forms.ToolStripMenuItem();
             this.B_Align16 = new System.Windows.Forms.ToolStripMenuItem();
             this.B_Align32 = new System.Windows.Forms.ToolStripMenuItem();
             this.B_Align64 = new System.Windows.Forms.ToolStripMenuItem();
             this.B_Align128 = new System.Windows.Forms.ToolStripMenuItem();
             this.B_RubyScript = new System.Windows.Forms.ToolStripMenuItem();
+            this.B_BatchMode = new System.Windows.Forms.ToolStripMenuItem();
+            this.B_DeleteAfter = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -120,9 +122,11 @@
             this.toolStripDropDownButton2.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.toolStripDropDownButton2.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.B_AutoExtract,
+            this.B_BatchMode,
+            this.B_DeleteAfter,
             this.B_BuildTexture,
             this.B_ArcPadding,
-            this.aRCFileAlignmentToolStripMenuItem,
+            this.B_Alignment,
             this.B_RubyScript});
             this.toolStripDropDownButton2.Image = ((System.Drawing.Image)(resources.GetObject("toolStripDropDownButton2.Image")));
             this.toolStripDropDownButton2.ImageTransparentColor = System.Drawing.Color.Magenta;
@@ -155,17 +159,17 @@
             this.B_ArcPadding.Size = new System.Drawing.Size(180, 22);
             this.B_ArcPadding.Text = "ARC Padding";
             // 
-            // aRCFileAlignmentToolStripMenuItem
+            // B_Alignment
             // 
-            this.aRCFileAlignmentToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.B_Alignment.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.B_Align0,
             this.B_Align16,
             this.B_Align32,
             this.B_Align64,
             this.B_Align128});
-            this.aRCFileAlignmentToolStripMenuItem.Name = "aRCFileAlignmentToolStripMenuItem";
-            this.aRCFileAlignmentToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.aRCFileAlignmentToolStripMenuItem.Text = "ARC File Alignment";
+            this.B_Alignment.Name = "B_Alignment";
+            this.B_Alignment.Size = new System.Drawing.Size(180, 22);
+            this.B_Alignment.Text = "ARC File Alignment";
             // 
             // B_Align0
             // 
@@ -216,6 +220,21 @@
             this.B_RubyScript.Size = new System.Drawing.Size(180, 22);
             this.B_RubyScript.Text = "Enable Ruby Script";
             // 
+            // B_BatchMode
+            // 
+            this.B_BatchMode.CheckOnClick = true;
+            this.B_BatchMode.Name = "B_BatchMode";
+            this.B_BatchMode.Size = new System.Drawing.Size(180, 22);
+            this.B_BatchMode.Text = "Batch Compress";
+            this.B_BatchMode.Click += new System.EventHandler(this.B_BatchMode_Click);
+            // 
+            // B_DeleteAfter
+            // 
+            this.B_DeleteAfter.CheckOnClick = true;
+            this.B_DeleteAfter.Name = "B_DeleteAfter";
+            this.B_DeleteAfter.Size = new System.Drawing.Size(180, 22);
+            this.B_DeleteAfter.Text = "Delete After Use";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -249,13 +268,15 @@
         private System.Windows.Forms.ToolStripMenuItem B_BuildTexture;
         private System.Windows.Forms.ToolStripMenuItem B_Help;
         private System.Windows.Forms.ToolStripMenuItem B_ArcPadding;
-        private System.Windows.Forms.ToolStripMenuItem aRCFileAlignmentToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem B_Alignment;
         private System.Windows.Forms.ToolStripMenuItem B_Align0;
         private System.Windows.Forms.ToolStripMenuItem B_Align16;
         private System.Windows.Forms.ToolStripMenuItem B_Align32;
         private System.Windows.Forms.ToolStripMenuItem B_Align64;
         private System.Windows.Forms.ToolStripMenuItem B_Align128;
         private System.Windows.Forms.ToolStripMenuItem B_RubyScript;
+        private System.Windows.Forms.ToolStripMenuItem B_BatchMode;
+        private System.Windows.Forms.ToolStripMenuItem B_DeleteAfter;
     }
 }
 

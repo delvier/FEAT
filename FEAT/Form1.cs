@@ -203,7 +203,19 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                         yaz0 = true;
                     }
                 }
-                if (ModifierKeys == Keys.Alt)
+                if (B_BatchMode.Checked)
+                {
+                    var cmp = LZ11Compress(File.ReadAllBytes(path));
+                    byte[] cmp2 = new byte[cmp.Length + 4];
+
+                    cmp2[0] = 0x13;
+                    Array.Copy(cmp, 0, cmp2, 4, cmp.Length);
+                    Array.Copy(cmp, 1, cmp2, 1, 3);
+                    File.WriteAllBytes(path + ".lz", cmp2);
+                    AddLine(RTB_Output, string.Format("LZ13 Normal compressed {0} to {1}", Path.GetFileName(path), Path.GetFileName(path) + ".lz"));
+                    File.Delete(path);
+                }
+                else if (ModifierKeys == Keys.Alt)
                 {
                     var cmp = LZ11Compress(File.ReadAllBytes(path));
                     byte[] cmp2 = new byte[cmp.Length + 4];
@@ -317,6 +329,8 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                         AddLine(RTB_Output, string.Format("Unable to automatically decompress {0}.", Path.GetFileName(path)));
                         Console.WriteLine(ex.Message);
                     }
+                    if (B_DeleteAfter.Checked)
+                        File.Delete(path);
                     if (File.Exists(decpath) && B_AutoExtract.Checked)
                         Open(decpath);
                 }
@@ -346,6 +360,8 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                             AddLine(RTB_Output, string.Format("Decompiled {0} to {1}", Path.GetFileName(path), Path.GetFileName(path) + ".txt"));
                         }
                     }
+                    if (B_DeleteAfter.Checked)
+                        File.Delete(path);
                 }
                 else if (ext == ".arc")
                 {
@@ -1031,6 +1047,8 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             AddLine(RTB_Output, string.Format("Ctrl   + Drag/Drop Folder for Arc builder." + Environment.NewLine));
             AddLine(RTB_Output, string.Format("#####     Additonal Options     #####"));
             AddLine(RTB_Output, string.Format("Auto Extract will extract textures, arc, text, after decompression."));
+            AddLine(RTB_Output, string.Format("Batch Compress allows for compression of many files all at once."));
+            AddLine(RTB_Output, string.Format("Delete After use will Delete the original file after compression/decompression"));
             AddLine(RTB_Output, string.Format("Build Textures + Drag/Drop Folder for Replace Textures in .bch"));
             AddLine(RTB_Output, string.Format("Build Textures + Drag/Drop extacted ctpk Folder to rebuild .ctpk"));
             AddLine(RTB_Output, string.Format("ARC Padding adds Padding to build arc file for Fates."));
@@ -1076,6 +1094,14 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             B_Align32.Checked = false;
             B_Align64.Checked = false;
             B_Align128.Checked = false;
+        }
+
+        private void B_BatchMode_Click(object sender, EventArgs e)
+        {
+            if (B_BatchMode.Checked)
+                B_DeleteAfter.Checked = true;
+            else if (!B_BatchMode.Checked)
+                B_DeleteAfter.Checked = false;
         }
     }
 }
