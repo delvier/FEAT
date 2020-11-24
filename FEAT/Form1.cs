@@ -457,6 +457,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                         {
                             string outfile = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path);
                             RunRubyScript("asset_pack.rb", string.Format(" -p \"{0}\" \"{1}\"", path, outfile));
+                            AddLine(RTB_Output, string.Format("Compiled {0} to {1}", Path.GetFileName(path), Path.GetFileName(outfile)));
 
                             var cmp = LZ11Compress(File.ReadAllBytes(outfile));
                             byte[] cmp2 = new byte[cmp.Length + 4];
@@ -465,7 +466,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                             Array.Copy(cmp, 0, cmp2, 4, cmp.Length);
                             Array.Copy(cmp, 1, cmp2, 1, 3);
                             File.WriteAllBytes(outfile + ".lz", cmp2);
-                            AddLine(RTB_Output, string.Format("Compiled and compressed {0} to {1}", Path.GetFileName(path), Path.GetFileName(outfile)));
+                            AddLine(RTB_Output, string.Format("Compressed {0} to {1}", Path.GetFileName(outfile), Path.GetFileName(outfile) + ".lz"));
                         }
                     }
                 }
@@ -483,6 +484,8 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                             {
                                 string outfile = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path);
                                 RunRubyScript("asset_pack.rb", string.Format(" -p \"{0}\" \"{1}\"", path, outfile));
+                                AddLine(RTB_Output, string.Format("Compiled {0} to {1}", Path.GetFileName(path), Path.GetFileName(outfile)));
+
 
                                 var cmp = LZ11Compress(File.ReadAllBytes(outfile));
                                 byte[] cmp2 = new byte[cmp.Length + 4];
@@ -491,7 +494,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                                 Array.Copy(cmp, 0, cmp2, 4, cmp.Length);
                                 Array.Copy(cmp, 1, cmp2, 1, 3);
                                 File.WriteAllBytes(outfile + ".lz", cmp2);
-                                AddLine(RTB_Output, string.Format("Compiled and compressed {0} to {1}", Path.GetFileName(path), Path.GetFileName(outfile) + ".lz"));
+                                AddLine(RTB_Output, string.Format("Compressed {0} to {1}", Path.GetFileName(outfile), Path.GetFileName(outfile) + ".lz"));
                             }
                             else
                             {
@@ -507,6 +510,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                     {
                         string outfile = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path);
                         RunRubyScript("aset_extract.rb", string.Format(" -p \"{0}\" \"{1}\"", path, outfile));
+                        AddLine(RTB_Output, string.Format("Compiled {0} to {1}", Path.GetFileName(path), Path.GetFileName(outfile)));
 
                         var cmp = LZ11Compress(File.ReadAllBytes(outfile));
                         byte[] cmp2 = new byte[cmp.Length + 4];
@@ -515,13 +519,17 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                         Array.Copy(cmp, 0, cmp2, 4, cmp.Length);
                         Array.Copy(cmp, 1, cmp2, 1, 3);
                         File.WriteAllBytes(outfile + ".lz", cmp2);
-                        AddLine(RTB_Output, string.Format("Compiled and compressed {0} to {1}", Path.GetFileName(path), Path.GetFileName(outfile) + ".lz"));
+                        AddLine(RTB_Output, string.Format("Decompiled {0} to {1}", Path.GetFileName(path), Path.GetFileName(path) + ".txt"));
                     }
                     else
                     {
                         RunRubyScript("aset_extract.rb", string.Format(" -u \"{0}\"", path));
                         AddLine(RTB_Output, string.Format("Decompiled {0} to {1}", Path.GetFileName(path), Path.GetFileName(path) + ".txt"));
                     }
+                }
+                else if (ext == ".icn")
+                {
+
                 }
             }
         }
@@ -557,6 +565,9 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                 startInfo.CreateNoWindow = true;
                 proc.StartInfo = startInfo;
                 proc.Start();
+                proc.WaitForExit();
+                if(proc.ExitCode == 0)
+                    return;
             }
         }
 
@@ -1013,7 +1024,6 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                 }
             }
         }
-
         private void AddText(RichTextBox RTB, string msg)
         {
             if (RTB.InvokeRequired)
@@ -1056,44 +1066,43 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             AddLine(RTB_Output, string.Format("Enable Ruby Script allows bin files to be decompiled to text based files"));
         }
 
-        private void B_Align128_Click(object sender, EventArgs e)
+        private void UncheckAlign()
         {
             B_Align0.Checked = false;
             B_Align16.Checked = false;
             B_Align32.Checked = false;
             B_Align64.Checked = false;
+            B_Align128.Checked = false;
+        }
+
+        private void B_Align128_Click(object sender, EventArgs e)
+        {
+            UncheckAlign();
+            B_Align128.Checked = true;
         }
 
         private void B_Align64_Click(object sender, EventArgs e)
         {
-            B_Align0.Checked = false;
-            B_Align16.Checked = false;
-            B_Align32.Checked = false;
-            B_Align128.Checked = false;
+            UncheckAlign();
+            B_Align64.Checked = true;
         }
 
         private void B_Align32_Click(object sender, EventArgs e)
         {
-            B_Align0.Checked = false;
-            B_Align16.Checked = false;
-            B_Align64.Checked = false;
-            B_Align128.Checked = false;
+            UncheckAlign();
+            B_Align32.Checked = true;
         }
 
         private void B_Align16_Click(object sender, EventArgs e)
         {
-            B_Align0.Checked = false;
-            B_Align32.Checked = false;
-            B_Align64.Checked = false;
-            B_Align128.Checked = false;
+            UncheckAlign();
+            B_Align16.Checked = true;
         }
 
         private void B_Align0_Click(object sender, EventArgs e)
         {
-            B_Align16.Checked = false;
-            B_Align32.Checked = false;
-            B_Align64.Checked = false;
-            B_Align128.Checked = false;
+            UncheckAlign();
+            B_Align0.Checked = true;
         }
 
         private void B_BatchMode_Click(object sender, EventArgs e)

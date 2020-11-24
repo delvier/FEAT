@@ -23,6 +23,12 @@ Drag and Drop an Extract CTPK folder to rebuild the CTPK.<br />
 [SciresM](https://github.com/SciresM) for the original FEAT code<br />
 AmbiguousPresence#4536 for the ruby script.
 
+## Velouria Forked FEAT v2.4
+- Added method for batch compression
+- Added option to delete files
+- Improved Ruby Script handling 
+- Fixed FEAT compressing file before Ruby script is done
+
 ## Velouria Forked FEAT v2.3
 - Integrated support for Ruby script 
 

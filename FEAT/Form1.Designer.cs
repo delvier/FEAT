@@ -38,6 +38,8 @@
             this.B_Help = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripDropDownButton2 = new System.Windows.Forms.ToolStripDropDownButton();
             this.B_AutoExtract = new System.Windows.Forms.ToolStripMenuItem();
+            this.B_BatchMode = new System.Windows.Forms.ToolStripMenuItem();
+            this.B_DeleteAfter = new System.Windows.Forms.ToolStripMenuItem();
             this.B_BuildTexture = new System.Windows.Forms.ToolStripMenuItem();
             this.B_ArcPadding = new System.Windows.Forms.ToolStripMenuItem();
             this.B_Alignment = new System.Windows.Forms.ToolStripMenuItem();
@@ -47,8 +49,6 @@
             this.B_Align64 = new System.Windows.Forms.ToolStripMenuItem();
             this.B_Align128 = new System.Windows.Forms.ToolStripMenuItem();
             this.B_RubyScript = new System.Windows.Forms.ToolStripMenuItem();
-            this.B_BatchMode = new System.Windows.Forms.ToolStripMenuItem();
-            this.B_DeleteAfter = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -143,6 +143,21 @@
             this.B_AutoExtract.Size = new System.Drawing.Size(180, 22);
             this.B_AutoExtract.Text = "Auto Extract";
             // 
+            // B_BatchMode
+            // 
+            this.B_BatchMode.CheckOnClick = true;
+            this.B_BatchMode.Name = "B_BatchMode";
+            this.B_BatchMode.Size = new System.Drawing.Size(180, 22);
+            this.B_BatchMode.Text = "Batch Compress";
+            this.B_BatchMode.Click += new System.EventHandler(this.B_BatchMode_Click);
+            // 
+            // B_DeleteAfter
+            // 
+            this.B_DeleteAfter.CheckOnClick = true;
+            this.B_DeleteAfter.Name = "B_DeleteAfter";
+            this.B_DeleteAfter.Size = new System.Drawing.Size(180, 22);
+            this.B_DeleteAfter.Text = "Delete After Use";
+            // 
             // B_BuildTexture
             // 
             this.B_BuildTexture.CheckOnClick = true;
@@ -173,43 +188,38 @@
             // 
             // B_Align0
             // 
-            this.B_Align0.CheckOnClick = true;
             this.B_Align0.Name = "B_Align0";
-            this.B_Align0.Size = new System.Drawing.Size(123, 22);
+            this.B_Align0.Size = new System.Drawing.Size(180, 22);
             this.B_Align0.Text = "0 bytes";
             this.B_Align0.Click += new System.EventHandler(this.B_Align0_Click);
             // 
             // B_Align16
             // 
-            this.B_Align16.CheckOnClick = true;
             this.B_Align16.Name = "B_Align16";
-            this.B_Align16.Size = new System.Drawing.Size(123, 22);
+            this.B_Align16.Size = new System.Drawing.Size(180, 22);
             this.B_Align16.Text = "16 bytes";
             this.B_Align16.Click += new System.EventHandler(this.B_Align16_Click);
             // 
             // B_Align32
             // 
-            this.B_Align32.CheckOnClick = true;
             this.B_Align32.Name = "B_Align32";
-            this.B_Align32.Size = new System.Drawing.Size(123, 22);
+            this.B_Align32.Size = new System.Drawing.Size(180, 22);
             this.B_Align32.Text = "32 bytes";
             this.B_Align32.Click += new System.EventHandler(this.B_Align32_Click);
             // 
             // B_Align64
             // 
-            this.B_Align64.CheckOnClick = true;
             this.B_Align64.Name = "B_Align64";
-            this.B_Align64.Size = new System.Drawing.Size(123, 22);
+            this.B_Align64.Size = new System.Drawing.Size(180, 22);
             this.B_Align64.Text = "64 bytes";
             this.B_Align64.Click += new System.EventHandler(this.B_Align64_Click);
             // 
             // B_Align128
             // 
             this.B_Align128.Checked = true;
-            this.B_Align128.CheckOnClick = true;
             this.B_Align128.CheckState = System.Windows.Forms.CheckState.Checked;
             this.B_Align128.Name = "B_Align128";
-            this.B_Align128.Size = new System.Drawing.Size(123, 22);
+            this.B_Align128.Size = new System.Drawing.Size(180, 22);
             this.B_Align128.Text = "128 bytes";
             this.B_Align128.Click += new System.EventHandler(this.B_Align128_Click);
             // 
@@ -219,21 +229,6 @@
             this.B_RubyScript.Name = "B_RubyScript";
             this.B_RubyScript.Size = new System.Drawing.Size(180, 22);
             this.B_RubyScript.Text = "Enable Ruby Script";
-            // 
-            // B_BatchMode
-            // 
-            this.B_BatchMode.CheckOnClick = true;
-            this.B_BatchMode.Name = "B_BatchMode";
-            this.B_BatchMode.Size = new System.Drawing.Size(180, 22);
-            this.B_BatchMode.Text = "Batch Compress";
-            this.B_BatchMode.Click += new System.EventHandler(this.B_BatchMode_Click);
-            // 
-            // B_DeleteAfter
-            // 
-            this.B_DeleteAfter.CheckOnClick = true;
-            this.B_DeleteAfter.Name = "B_DeleteAfter";
-            this.B_DeleteAfter.Size = new System.Drawing.Size(180, 22);
-            this.B_DeleteAfter.Text = "Delete After Use";
             // 
             // Form1
             // 
