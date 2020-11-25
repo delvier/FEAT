@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using System.Linq;
 
 namespace ctpktool
 {
@@ -25,57 +24,11 @@ namespace ctpktool
             Version = 1;
         }
 
-        private int CalculatePadding(int max, int cur)
-        {
-            int padding = max - cur % max;
-
-            if (padding == max)
-                padding = 0;
-
-            return padding;
-        }
-
         public void Write(BinaryWriter writer)
         {
             writer.Write(new byte[0x20]); // Write 0x20 bytes of blank data so we can come back to it later
 
-            // Make sure all sections have a unique IndexA
-            // If not, give them one
-            _entries.Sort((x, y) => x.FileIndexA.CompareTo(y.FileIndexA));
-            var fileIndexes = _entries.Select(x => x.FileIndexA);
-            int nextFileIndex = 0;
-            for (int i = 0; i < _entries.Count; i++)
-            {
-                if(_entries[i].FileIndexA == -1)
-                {
-                    while(fileIndexes.Contains(nextFileIndex))
-                    {
-                        nextFileIndex++;
-                    }
-
-                    _entries[i].FileIndexA = nextFileIndex;
-                }
-            }
-
-            // Do the same as above, but for FileIndexB
-            _entries.Sort((x, y) => x.FileIndexB.CompareTo(y.FileIndexB));
-            fileIndexes = _entries.Select(x => x.FileIndexB);
-            nextFileIndex = 0;
-            for (int i = 0; i < _entries.Count; i++)
-            {
-                if (_entries[i].FileIndexB == -1)
-                {
-                    while (fileIndexes.Contains(nextFileIndex))
-                    {
-                        nextFileIndex++;
-                    }
-
-                    _entries[i].FileIndexB = nextFileIndex;
-                }
-            }
-
             // Section 1
-            _entries.Sort((x, y) => x.FileIndexA.CompareTo(y.FileIndexA));
             foreach (var entry in _entries)
             {
                 entry.Write(writer);
@@ -102,27 +55,26 @@ namespace ctpktool
                 writer.Write((byte)0); // Null terminated
             }
 
-            writer.Write(new byte[CalculatePadding(4, (int)writer.BaseStream.Length)]); // Pad the filename section to the nearest 4th byte
+            writer.Write(new byte[4 - writer.BaseStream.Length%4]); // Pad the filename section to the nearest 4th byte
 
             // Section 4
-            _entries.Sort((x, y) => x.FileIndexB.CompareTo(y.FileIndexB));
             HashSectionOffset = (uint)writer.BaseStream.Length;
-            foreach (var entry in _entries)
+            for (int i = 0; i < _entries.Count; i++)
             {
+                var entry = _entries[i];
                 writer.Write(entry.FilenameHash);
-                writer.Write(entry.FileIndexA);
+                writer.Write(i);
             }
 
             // Section 5
-            _entries.Sort((x, y) => x.FileIndexA.CompareTo(y.FileIndexA));
             TextureInfoSection = (uint)writer.BaseStream.Length;
             foreach (var entry in _entries)
             {
                 writer.Write(entry.Info2);
             }
 
-            writer.Write(new byte[CalculatePadding(0x80, (int)writer.BaseStream.Length)]); // Pad the filename section to the nearest 0x80th byte
-
+            writer.Write(new byte[0x80 - writer.BaseStream.Length % 0x80]); // Pad the filename section to the nearest 0x80th byte
+            
             // Section 6
             TextureSectionOffset = (uint)writer.BaseStream.Length;
             TextureSectionSize = 0;
@@ -153,54 +105,45 @@ namespace ctpktool
             writer.Write(TextureInfoSection);
         }
 
-        public static Ctpk Create(string inputPath, string outputPath)
+        public static Ctpk Create(string folder)
         {
-            if (!Directory.Exists(inputPath))
-            {
-                return null;
-            }
-            
             Ctpk file = new Ctpk();
 
             // Look for all xml definition files in the folder
-            var files = Directory.GetFiles(inputPath, "*.xml", SearchOption.AllDirectories);
+            var files = Directory.GetFiles(folder, "*.xml", SearchOption.AllDirectories);
             foreach (var xmlFilename in files)
             {
-                CTPKEntry entry = CTPKEntry.FromFile(xmlFilename, inputPath);
+                CTPKEntry entry = CTPKEntry.FromFile(xmlFilename, folder);
                 file._entries.Add(entry);
             }
 
             for (int i = 0; i < file._entries.Count; i++)
             {
-                file._entries[i].BitmapSizeOffset = (uint)((file._entries.Count + 1)*8 + i);
+                file._entries[i].BitmapSizeOffset = (uint)((file._entries.Count + 1)*8 + (i*8));
             }
 
-            using (BinaryWriter writer = new BinaryWriter(File.Open(outputPath, FileMode.Create)))
+            var outputFilename = folder + ".ctpk";
+            using (BinaryWriter writer = new BinaryWriter(File.Open(outputFilename, FileMode.Create)))
             {
                 file.Write(writer);
             }
 
-            Console.WriteLine("Finished! Saved to {0}", outputPath);
+            Console.WriteLine("Finished! Saved to {0}", outputFilename);
 
             return file;
         }
 
-        public static Ctpk Read(string inputPath, string outputPath, bool isRawExtract = false)
+        public static Ctpk Read(string filename)
         {
-            if (!File.Exists(inputPath))
-            {
-                return null;
-            }
-
-            using (BinaryReader reader = new BinaryReader(File.Open(inputPath, FileMode.Open)))
+            using (BinaryReader reader = new BinaryReader(File.Open(filename, FileMode.Open)))
             {
                 var data = new byte[reader.BaseStream.Length];
                 reader.Read(data, 0, data.Length);
-                return Read(data, inputPath, outputPath, isRawExtract);
+                return Read(data, filename);
             }
         }
 
-        public static Ctpk Read(byte[] data, string inputPath, string outputPath, bool isRawExtract = false)
+        public static Ctpk Read(byte[] data, string filename)
         {
             Ctpk file = new Ctpk();
 
@@ -225,7 +168,6 @@ namespace ctpktool
                     reader.BaseStream.Seek(0x20 * (i + 1), SeekOrigin.Begin);
 
                     CTPKEntry entry = CTPKEntry.Read(reader);
-                    entry.FileIndexA = file._entries.Count;
                     file._entries.Add(entry);
                 }
 
@@ -236,20 +178,9 @@ namespace ctpktool
                 }
 
                 // Section 4
-                reader.BaseStream.Seek(file.HashSectionOffset, SeekOrigin.Begin);
                 for (int i = 0; i < file.NumberOfTextures; i++)
                 {
                     file._entries[i].FilenameHash = reader.ReadUInt32();
-
-                    int idx = reader.ReadInt32();
-                    if (idx < file._entries.Count)
-                    {
-                        file._entries[idx].FileIndexB = i;
-                    }
-                    else
-                    {
-                        Console.WriteLine("ERROR(?): Found hash entry without a matching file entry");
-                    }
                 }
 
                 // Section 5
@@ -266,11 +197,19 @@ namespace ctpktool
                     file._entries[i].TextureRawData = new byte[file._entries[i].TextureSize];
                     reader.Read(file._entries[i].TextureRawData, 0, (int)file._entries[i].TextureSize);
                 }
-                
+
+                string basePath = Path.GetDirectoryName(filename);
+                string baseFilename = Path.GetFileNameWithoutExtension(filename);
+
+                if (!String.IsNullOrWhiteSpace(basePath))
+                {
+                    baseFilename = Path.Combine(basePath, baseFilename);
+                }
+
                 for (int i = 0; i < file.NumberOfTextures; i++)
                 {
                     Console.WriteLine("Converting {0}...", file._entries[i].InternalFilePath);
-                    file._entries[i].ToFile(outputPath, isRawExtract);
+                    file._entries[i].ToFile(baseFilename);
                 }
             }
 

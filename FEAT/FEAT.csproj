@@ -69,6 +69,10 @@
     <Compile Include="ctpktool\CTPK.cs" />
     <Compile Include="ctpktool\CTPKEntry.cs" />
     <Compile Include="ctpktool\ETC.cs" />
+    <Compile Include="ctpktool\LibEveryFileExplorer\GFX\ColorFormat.cs" />
+    <Compile Include="ctpktool\LibEveryFileExplorer\GFX\ETC1.cs" />
+    <Compile Include="ctpktool\LibEveryFileExplorer\GFX\GFXUtil.cs" />
+    <Compile Include="ctpktool\LibEveryFileExplorer\IO\IOUtil.cs" />
     <Compile Include="ctpktool\Texture.cs" />
     <Compile Include="ctpktool\TextureFormat.cs" />
     <Compile Include="CTR_Textures.cs" />
@@ -119,6 +123,7 @@
     <None Include="asset_pack.rb">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <EmbeddedResource Include="Header.bin" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

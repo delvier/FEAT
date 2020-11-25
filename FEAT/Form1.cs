@@ -15,6 +15,7 @@ using SPICA.WinForms;
 using SPICA.Formats.CtrGfx.Texture;
 using GovanifY.Utility;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace Fire_Emblem_Awakening_Archive_Tool
 {
@@ -170,9 +171,25 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                         }
                         else
                         {
-                            AddText(RTB_Output, string.Format("Building ctpk from {0}...", Path.GetFileName(path)));
-                            Ctpk.Create(path);
-                            AddLine(RTB_Output, "Complete!");
+                            if (filelist.Length == 1 && Path.GetFileName(filelist[0]) == "icon.xml")
+                            {
+                                AddText(RTB_Output, string.Format("Building ctpk from {0}...", Path.GetFileName(path)));
+                                Ctpk.Create(path, path + ".ctpk");
+                                AddLine(RTB_Output, "Complete!");
+                                if (MessageBox.Show("Export DLC .icn?\n(Please wait for ctpk to be built)", "Prompt", MessageBoxButtons.YesNo, MessageBoxIcon.Asterisk) == DialogResult.Yes)
+                                {
+                                    AddText(RTB_Output, string.Format("Building icn from {0}...", Path.GetFileName(path)));
+                                    byte[] icn = CTPKtoICN(File.ReadAllBytes(path + ".ctpk"));
+                                    File.WriteAllBytes(path + ".icn", icn);
+                                    AddLine(RTB_Output, "Complete!");
+                                }
+                            }
+                            else
+                            {
+                                AddText(RTB_Output, string.Format("Building ctpk from {0}...", Path.GetFileName(path)));
+                                Ctpk.Create(path, path + ".ctpk");
+                                AddLine(RTB_Output, "Complete!");
+                            }
                         }
                     }
                 }
@@ -372,7 +389,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                 else if (ext == ".ctpk")
                 {
                     AddText(RTB_Output, string.Format("Extracting images from {0}...", Path.GetFileName(path)));
-                    Ctpk.Read(path);
+                    Ctpk.Read(path, Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path));
                     AddLine(RTB_Output, "Complete!");
                 }
                 else if (ext == ".bch" || ext == ".t" || ext == ".bcmdl" || ext == ".m")
@@ -529,8 +546,55 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                 }
                 else if (ext == ".icn")
                 {
-
+                    AddText(RTB_Output, string.Format("Extracting images from {0}...", Path.GetFileName(path)));
+                    byte[] icn = File.ReadAllBytes(path);
+                    byte[] cptk = ICNtoCTPK(icn);
+                    Ctpk.Read(cptk, path, Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path));
+                    AddLine(RTB_Output, "Complete!");
                 }
+            }
+        }
+
+        private byte[] CTPKtoICN(byte[] icon)
+        {
+            byte[] icn = new byte[4608];
+
+            for(int i = 0; i <= 5; i++)
+            {
+                Array.Copy(icon, ((i * 1024) + 128), icn, (i * 768), 768);
+            }
+
+            return icn;
+        }
+
+        private byte[] ICNtoCTPK(byte[] icon)
+        {
+            byte[] ctpk = new byte[8192];
+            for (int i = 0; i <= 5; i++)
+            {
+                Array.Copy(icon, (i * 768), ctpk, (i * 1024), 768);
+            }
+
+            //Add Header
+            var assembly = Assembly.GetExecutingAssembly();
+            var stream = assembly.GetManifestResourceStream("Fire_Emblem_Awakening_Archive_Tool.Header.bin");
+
+            byte[] header = ReadAllBytes(stream);
+            byte[] OutFile = new byte[header.Length + ctpk.Length];
+            Array.Copy(header, 0, OutFile, 0, header.Length);
+            Array.Copy(ctpk, 0, OutFile, header.Length, ctpk.Length);
+            return OutFile;
+        }
+
+        private byte[] ReadAllBytes(Stream instream)
+        {
+            if (instream is MemoryStream)
+                return ((MemoryStream)instream).ToArray();
+
+            using (var memoryStream = new MemoryStream())
+            {
+                instream.CopyTo(memoryStream);
+                return memoryStream.ToArray();
             }
         }
 
