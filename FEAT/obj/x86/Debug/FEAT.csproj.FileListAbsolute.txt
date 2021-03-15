@@ -20,7 +20,6 @@ C:\Users\moonl\Desktop\FEAT-master\FEAT\bin\Debug\FEAT.pdb
 D:\GitHub\FEAT\FEAT\bin\Debug\FEAT.exe
 D:\GitHub\FEAT\FEAT\bin\Debug\FEAT.pdb
 D:\GitHub\FEAT\FEAT\obj\x86\Debug\FEAT.csprojAssemblyReference.cache
-D:\GitHub\FEAT\FEAT\obj\x86\Debug\Fire_Emblem_Awakening_Archive_Tool.Form1.resources
 D:\GitHub\FEAT\FEAT\obj\x86\Debug\Fire_Emblem_Awakening_Archive_Tool.Properties.Resources.resources
 D:\GitHub\FEAT\FEAT\obj\x86\Debug\FEAT.csproj.GenerateResource.cache
 D:\GitHub\FEAT\FEAT\obj\x86\Debug\FEAT.csproj.CoreCompileInputs.cache
@@ -30,3 +29,4 @@ D:\GitHub\FEAT\FEAT\bin\Debug\FEAT.exe.config
 D:\GitHub\FEAT\FEAT\obj\x86\Debug\FEAT.csproj.Fody.CopyLocal.cache
 D:\GitHub\FEAT\FEAT\bin\Debug\aset_extract.rb
 D:\GitHub\FEAT\FEAT\bin\Debug\asset_pack.rb
+D:\GitHub\FEAT\FEAT\obj\x86\Debug\FEAT.Form1.resources

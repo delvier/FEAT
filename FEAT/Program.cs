@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 
-namespace Fire_Emblem_Awakening_Archive_Tool
+namespace FEAT
 {
     static class Program
     {

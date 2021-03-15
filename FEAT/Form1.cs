@@ -16,12 +16,14 @@ using SPICA.Formats.CtrGfx.Texture;
 using GovanifY.Utility;
 using System.Diagnostics;
 using System.Reflection;
+using FEAT.Library.FE3D_Bin;
 
-namespace Fire_Emblem_Awakening_Archive_Tool
+namespace FEAT
 {
     public partial class Form1 : Form
     {
         private static H3D Scene;
+        private int Alignment = 128;
         public Form1()
         {
             InitializeComponent();
@@ -39,6 +41,11 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             {
                 B_RubyScript.Checked = true;
             }
+            B_Align128.Click += (sender, EventArgs) => { int align = 128; AlignButton_Click(sender, EventArgs, align); };
+            B_Align64.Click += (sender, EventArgs) => { int align = 64; AlignButton_Click(sender, EventArgs, align); };
+            B_Align32.Click += (sender, EventArgs) => { int align = 32; AlignButton_Click(sender, EventArgs, align); };
+            B_Align16.Click += (sender, EventArgs) => { int align = 16; AlignButton_Click(sender, EventArgs, align); };
+            B_Align0.Click += (sender, EventArgs) => { int align = 0; AlignButton_Click(sender, EventArgs, align); };
         }
 
         private volatile int threads;
@@ -196,8 +203,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                 else if (ModifierKeys == Keys.Control)
                 {
                     AddText(RTB_Output, string.Format("Building ARC from {0}...", Path.GetFileName(path)));
-                    string outfile = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".arc";
-                    CreateFireEmblemArchive(path, outfile);
+                    FE3D_Bin.CreateArc(path, Alignment, B_ArcPadding.Checked);
                     AddLine(RTB_Output, "Complete!");
                 }
                 else
@@ -365,6 +371,13 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                     {
                         AddLine(RTB_Output, string.Format("Successfully extracted Heroes Message Archive {0}", Path.GetFileName(path)));
                     }
+                    else
+                    {
+                        AddText(RTB_Output, $"Converting {Path.GetFileName(path)} to {Path.GetFileNameWithoutExtension(path)}.txt...");
+                        FE3D_Bin.ExtractBin(path);
+                        AddLine(RTB_Output, "Done");
+                    }
+                    /*Ruby Method
                     else if (B_RubyScript.Checked)
                     {
                         if (!File.Exists("asset_pack.rb"))
@@ -377,14 +390,17 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                             AddLine(RTB_Output, string.Format("Decompiled {0} to {1}", Path.GetFileName(path), Path.GetFileName(path) + ".txt"));
                         }
                     }
+                    */
                     if (B_DeleteAfter.Checked)
                         File.Delete(path);
                 }
                 else if (ext == ".arc")
                 {
                     byte[] filedata = File.ReadAllBytes(path);
+                    AddText(RTB_Output, $"Extracting {Convert.ToInt32(filedata[8])} files from {Path.GetFileName(path)} to {Path.GetFileNameWithoutExtension(path)}...");
                     if (BitConverter.ToUInt32(filedata, 0) == filedata.Length || BitConverter.ToUInt32(filedata,filedata.Length-4) == 0x43524654)
-                        ExtractFireEmblemArchive(Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + Path.DirectorySeparatorChar, filedata);
+                        FE3D_Bin.ExtractArc(Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + Path.DirectorySeparatorChar, filedata);
+                    AddLine(RTB_Output, "Done");
                 }
                 else if (ext == ".ctpk")
                 {
@@ -1130,43 +1146,35 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             AddLine(RTB_Output, string.Format("Enable Ruby Script allows bin files to be decompiled to text based files"));
         }
 
-        private void UncheckAlign()
+        private void AlignButton_Click(object sender, EventArgs e, int Align)
         {
+            B_Align0.Checked = false;
             B_Align0.Checked = false;
             B_Align16.Checked = false;
             B_Align32.Checked = false;
             B_Align64.Checked = false;
             B_Align128.Checked = false;
-        }
 
-        private void B_Align128_Click(object sender, EventArgs e)
-        {
-            UncheckAlign();
-            B_Align128.Checked = true;
-        }
+            switch (Align)
+            {
+                case 0:
+                    B_Align0.Checked = true;
+                    break;
+                case 16:
+                    B_Align16.Checked = true;
+                    break;
+                case 32:
+                    B_Align32.Checked = true;
+                    break;
+                case 64:
+                    B_Align64.Checked = true;
+                    break;
+                case 128:
+                    B_Align128.Checked = true;
+                    break;
+            }
 
-        private void B_Align64_Click(object sender, EventArgs e)
-        {
-            UncheckAlign();
-            B_Align64.Checked = true;
-        }
-
-        private void B_Align32_Click(object sender, EventArgs e)
-        {
-            UncheckAlign();
-            B_Align32.Checked = true;
-        }
-
-        private void B_Align16_Click(object sender, EventArgs e)
-        {
-            UncheckAlign();
-            B_Align16.Checked = true;
-        }
-
-        private void B_Align0_Click(object sender, EventArgs e)
-        {
-            UncheckAlign();
-            B_Align0.Checked = true;
+            Alignment = Align;
         }
 
         private void B_BatchMode_Click(object sender, EventArgs e)

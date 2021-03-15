@@ -1,4 +1,4 @@
-﻿namespace Fire_Emblem_Awakening_Archive_Tool
+﻿namespace FEAT
 {
     partial class Form1
     {
@@ -191,28 +191,24 @@
             this.B_Align0.Name = "B_Align0";
             this.B_Align0.Size = new System.Drawing.Size(180, 22);
             this.B_Align0.Text = "0 bytes";
-            this.B_Align0.Click += new System.EventHandler(this.B_Align0_Click);
             // 
             // B_Align16
             // 
             this.B_Align16.Name = "B_Align16";
             this.B_Align16.Size = new System.Drawing.Size(180, 22);
             this.B_Align16.Text = "16 bytes";
-            this.B_Align16.Click += new System.EventHandler(this.B_Align16_Click);
             // 
             // B_Align32
             // 
             this.B_Align32.Name = "B_Align32";
             this.B_Align32.Size = new System.Drawing.Size(180, 22);
             this.B_Align32.Text = "32 bytes";
-            this.B_Align32.Click += new System.EventHandler(this.B_Align32_Click);
             // 
             // B_Align64
             // 
             this.B_Align64.Name = "B_Align64";
             this.B_Align64.Size = new System.Drawing.Size(180, 22);
             this.B_Align64.Text = "64 bytes";
-            this.B_Align64.Click += new System.EventHandler(this.B_Align64_Click);
             // 
             // B_Align128
             // 
@@ -221,7 +217,6 @@
             this.B_Align128.Name = "B_Align128";
             this.B_Align128.Size = new System.Drawing.Size(180, 22);
             this.B_Align128.Text = "128 bytes";
-            this.B_Align128.Click += new System.EventHandler(this.B_Align128_Click);
             // 
             // B_RubyScript
             // 
