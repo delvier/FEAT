@@ -30,3 +30,16 @@ D:\GitHub\FEAT\FEAT\bin\Debug\FEAT.exe.config
 D:\GitHub\FEAT\FEAT\obj\x86\Debug\FEAT.csproj.Fody.CopyLocal.cache
 D:\GitHub\FEAT\FEAT\bin\Debug\aset_extract.rb
 D:\GitHub\FEAT\FEAT\bin\Debug\asset_pack.rb
+E:\FEAT-git\FEAT\obj\x86\Debug\FEAT.csprojAssemblyReference.cache
+E:\FEAT-git\FEAT\obj\x86\Debug\Fire_Emblem_Awakening_Archive_Tool.Form1.resources
+E:\FEAT-git\FEAT\obj\x86\Debug\Fire_Emblem_Awakening_Archive_Tool.Properties.Resources.resources
+E:\FEAT-git\FEAT\obj\x86\Debug\FEAT.csproj.GenerateResource.cache
+E:\FEAT-git\FEAT\obj\x86\Debug\FEAT.csproj.CoreCompileInputs.cache
+E:\FEAT-git\FEAT\obj\x86\Debug\FEAT.exe
+E:\FEAT-git\FEAT\obj\x86\Debug\FEAT.pdb
+E:\FEAT-git\FEAT\bin\Debug\aset_extract.rb
+E:\FEAT-git\FEAT\bin\Debug\asset_pack.rb
+E:\FEAT-git\FEAT\bin\Debug\FEAT.exe.config
+E:\FEAT-git\FEAT\bin\Debug\FEAT.exe
+E:\FEAT-git\FEAT\bin\Debug\FEAT.pdb
+E:\FEAT-git\FEAT\obj\x86\Debug\FEAT.csproj.Fody.CopyLocal.cache

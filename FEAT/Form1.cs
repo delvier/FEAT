@@ -359,6 +359,10 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                             RunRubyScript("asset_pack.rb", string.Format(" -u \"{0}\"", path));
                             AddLine(RTB_Output, string.Format("Decompiled {0} to {1}", Path.GetFileName(path), Path.GetFileName(path) + ".txt"));
                         }
+                    } else
+                    {
+                        string archive_name = ExtractFEDSMessageArchive(outname, filedata);
+                        AddLine(RTB_Output, string.Format("Successfully extracted DSFE Message Archive {0}", Path.GetFileName(path)));
                     }
                     if (B_DeleteAfter.Checked)
                         File.Delete(path);
@@ -879,6 +883,47 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             return ArchiveName;
         }
 
+        private string ExtractFEDSMessageArchive(string outname, byte[] archive)
+        {
+            //// Unlike 3DSFE text archives, simply a single null byte indicates the end of string.
+            //// There is no ArchiveName in DSFE text archives
+            //// In the Japanese version, the string is always in ShiftJIS.
+            var ShiftJIS = Encoding.GetEncoding(932);
+            string ArchiveName = ""; //ShiftJIS.GetString(archive.Skip(0x20).TakeWhile(b => b != 0).ToArray()); // Archive Name.
+            uint TextPartitionLen = BitConverter.ToUInt32(archive, 4);
+            uint StringCount = BitConverter.ToUInt32(archive, 0xC);
+            string[] MessageNames = new string[StringCount];
+            string[] Messages = new string[StringCount];
+
+            uint StringMetaOffset = 0x20 + TextPartitionLen;
+            uint NamesOffset = StringMetaOffset + 0x8 * StringCount;
+
+            for (int i = 0; i < StringCount; i++)
+            {
+                int MessageOffset = 0x20 + BitConverter.ToInt32(archive, (int)StringMetaOffset + 0x8 * i);
+                /* Don't need MessageLen; null byte is always the end of string
+                int MessageLen = 0;
+                while (BitConverter.ToUInt16(archive, MessageOffset + MessageLen) != 0)
+                    MessageLen += 1; */
+                Messages[i] = ShiftJIS.GetString(archive.Skip(MessageOffset).TakeWhile(b => b != 0).ToArray()).Replace("\n", "\\n").Replace("\r", "\\r").Replace("\x01", "\\x01").Replace("\x02", "\\x02").Replace("\x03", "\\x03").Replace("\x04", "\\x04").Replace("\x05", "\\x05").Replace("\x06", "\\x06").Replace("\x07", "\\x07").Replace("\x08", "\\x08").Replace("\x0b", "\\x0b").Replace("\x0c", "\\x0c").Replace("\x0f", "\\x0f").Replace("\x0e", "\\x0e").Replace("\x10", "\\x10").Replace("\x11", "\\x11").Replace("\x12", "\\x12").Replace("\x13", "\\x13").Replace("\x14", "\\x14");
+                int NameOffset = (int)NamesOffset + BitConverter.ToInt32(archive, (int)StringMetaOffset + (0x8 * i) + 4);
+                MessageNames[i] = ShiftJIS.GetString(archive.Skip(NameOffset).TakeWhile(b => b != 0).ToArray());
+            }
+
+            List<string> Lines = new List<string>
+            {
+                ArchiveName,
+                Environment.NewLine,
+                "Message Name: Message",
+                Environment.NewLine
+            };
+            for (int i = 0; i < StringCount; i++)
+                Lines.Add(string.Format("{0}: {1}", MessageNames[i], Messages[i]));
+            File.WriteAllLines(outname, Lines);
+
+            return ArchiveName;
+        }
+
         private bool TryExtractFireEmblemHeroesMessageArchive(string outname, byte[] archive)
         {
             if (archive.Length < 0x28)
@@ -907,7 +952,15 @@ namespace Fire_Emblem_Awakening_Archive_Tool
 
             // Okay this is probably a message archive.
             var dec_archive = (byte[]) archive.Clone();
-            var names = new string[num_strings];
+            string[] names;
+            try
+            {
+                names = new string[num_strings];
+            }
+            catch (Exception)
+            {
+                return false;
+            }
             var messages = new string[num_strings];
 
             // This isn't how the game internally does it, but the game's cipher reduces to this.
