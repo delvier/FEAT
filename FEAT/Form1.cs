@@ -326,8 +326,16 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                     }
                     catch (Exception ex)
                     {
-                        AddLine(RTB_Output, string.Format("Unable to automatically decompress {0}.", Path.GetFileName(path)));
-                        Console.WriteLine(ex.Message);
+                        try
+                        {
+                            File.WriteAllBytes(decpath, LZ10Decompress(filedata));
+                            AddLine(RTB_Output, string.Format("Successfully decompressed {0}.", Path.GetFileName(decpath)));
+                        }
+                        catch (Exception ey)
+                        {
+                            AddLine(RTB_Output, string.Format("Unable to automatically decompress {0}.", Path.GetFileName(path)));
+                            Console.WriteLine(ey.Message);
+                        }
                     }
                     if (B_DeleteAfter.Checked)
                         File.Delete(path);
@@ -1061,6 +1069,18 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                 using (MemoryStream dstream = new MemoryStream())
                 {
                     (new LZ11()).Decompress(cstream, compressed.Length, dstream);
+                    return dstream.ToArray();
+                }
+            }
+        }
+
+        private byte[] LZ10Decompress(byte[] compressed)
+        {
+            using (MemoryStream cstream = new MemoryStream(compressed))
+            {
+                using (MemoryStream dstream = new MemoryStream())
+                {
+                    (new LZ10()).Decompress(cstream, compressed.Length, dstream);
                     return dstream.ToArray();
                 }
             }
