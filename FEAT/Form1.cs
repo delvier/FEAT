@@ -459,6 +459,21 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                             Array.Copy(cmp, 1, cmp2, 1, 3);
                             File.WriteAllBytes(outname + ".lz", cmp2);
                     }
+                    else if (textfile.Length > 6 && textfile[0].StartsWith("m/") && textfile[3] == "Message Name: Message" && textfile.Skip(6).All(s => s.Contains(": ")))
+                    {
+                        AddText(RTB_Output, string.Format("Rebuilding Message Archive from {0}...", Path.GetFileName(path)));
+                        string outname = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".bin";
+                        byte[] arch = MakeFEDSMessageArchive(textfile);
+                        File.WriteAllBytes(outname, arch);
+                        AddLine(RTB_Output, "Complete!");
+                        byte[] cmp = LZ10Compress(arch);
+                        byte[] cmp2 = new byte[cmp.Length + 4];
+
+                        cmp2[0] = 0x13;
+                        Array.Copy(cmp, 0, cmp2, 4, cmp.Length);
+                        Array.Copy(cmp, 1, cmp2, 1, 3);
+                        File.WriteAllBytes(outname + ".lz", cmp2);
+                    }
                     else if (B_RubyScript.Checked)
                     {
                         if (!File.Exists("asset_pack.rb"))
@@ -854,6 +869,74 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             return Archive;
         }
 
+        private byte[] MakeFEDSMessageArchive(string[] lines)
+        {
+            var ShiftJIS = Encoding.GetEncoding(932);
+            int StringCount = lines.Length - 6;
+            string[] Messages = new string[StringCount];
+            string[] Names = new string[StringCount];
+            uint[] MPos = new uint[StringCount];
+            uint[] NPos = new uint[StringCount];
+            for (int i = 6; i < lines.Length; i++)
+            {
+                int ind = lines[i].IndexOf(": ", StringComparison.Ordinal);
+                Names[i - 6] = lines[i].Substring(0, ind);
+                Messages[i - 6] = lines[i].Substring(ind + 2, lines[i].Length - (ind + 2)).Replace("\\n", "\n").Replace("\\r", "\r").Replace("\\x01", "\x01").Replace("\\x02", "\x02").Replace("\\x03", "\x03").Replace("\\x04", "\x04").Replace("\\x05", "\x05").Replace("\\x06", "\x06").Replace("\\x07", "\x07").Replace("\\x08", "\x08").Replace("\\x0b", "\x0b").Replace("\\x0c", "\x0c").Replace("\\x0f", "\x0f").Replace("\\x0e", "\x0e").Replace("\\x10", "\x10").Replace("\\x11", "\x11").Replace("\\x12", "\x12").Replace("\\x13", "\x13").Replace("\\x14", "\x14"); ;
+            }
+            byte[] Header = new byte[0x20];
+            byte[] StringTable;
+            byte[] MetaTable = new byte[StringCount * 8];
+            byte[] NamesTable;
+            using (MemoryStream st = new MemoryStream())
+            {
+                using (BinaryWriter bw = new BinaryWriter(st))
+                {
+                    /* This is not required for DSFE
+                    bw.Write(ShiftJIS.GetBytes(lines[0]));
+                    bw.Write((byte)0);
+                    while (bw.BaseStream.Position % 4 != 0)
+                        bw.Write((byte)0); */
+                    for (int i = 0; i < StringCount; i++)
+                    {
+                        MPos[i] = (uint)bw.BaseStream.Position;
+                        bw.Write(ShiftJIS.GetBytes(Messages[i]));
+                        bw.Write((byte)0);
+                        // Single null is okay for DSFE except for the end
+                    }
+                    while (bw.BaseStream.Position % 4 != 0)
+                        bw.Write((byte)0);
+                }
+                StringTable = st.ToArray();
+            }
+            using (MemoryStream nt = new MemoryStream())
+            {
+                using (BinaryWriter bw = new BinaryWriter(nt))
+                {
+                    for (int i = 0; i < StringCount; i++)
+                    {
+                        NPos[i] = (uint)bw.BaseStream.Position;
+                        bw.Write(ShiftJIS.GetBytes(Names[i]));
+                        bw.Write((byte)0);
+                    }
+                }
+                NamesTable = nt.ToArray();
+            }
+            for (int i = 0; i < StringCount; i++)
+            {
+                Array.Copy(BitConverter.GetBytes(MPos[i]), 0, MetaTable, (i * 8), 4);
+                Array.Copy(BitConverter.GetBytes(NPos[i]), 0, MetaTable, (i * 8) + 4, 4);
+            }
+            byte[] Archive = new byte[Header.Length + StringTable.Length + MetaTable.Length + NamesTable.Length];
+            Array.Copy(BitConverter.GetBytes(Archive.Length), Header, 4);
+            Array.Copy(BitConverter.GetBytes(StringTable.Length), 0, Header, 4, 4);
+            Array.Copy(BitConverter.GetBytes(StringCount), 0, Header, 0xC, 4);
+            Array.Copy(Header, Archive, Header.Length);
+            Array.Copy(StringTable, 0, Archive, Header.Length, StringTable.Length);
+            Array.Copy(MetaTable, 0, Archive, Header.Length + StringTable.Length, MetaTable.Length);
+            Array.Copy(NamesTable, 0, Archive, Header.Length + StringTable.Length + MetaTable.Length, NamesTable.Length);
+            return Archive;
+        }
+
         private string ExtractFireEmblemMessageArchive(string outname, byte[] archive)
         {
             var ShiftJIS = Encoding.GetEncoding(932);
@@ -897,7 +980,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             //// There is no ArchiveName in DSFE text archives
             //// In the Japanese version, the string is always in ShiftJIS.
             var ShiftJIS = Encoding.GetEncoding(932);
-            string ArchiveName = ""; //ShiftJIS.GetString(archive.Skip(0x20).TakeWhile(b => b != 0).ToArray()); // Archive Name.
+            string ArchiveName = "m/" + Path.GetFileName(outname).Replace(".txt", ""); //ShiftJIS.GetString(archive.Skip(0x20).TakeWhile(b => b != 0).ToArray()); // Archive Name.
             uint TextPartitionLen = BitConverter.ToUInt32(archive, 4);
             uint StringCount = BitConverter.ToUInt32(archive, 0xC);
             string[] MessageNames = new string[StringCount];
@@ -1093,6 +1176,17 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                 using (MemoryStream cstream = new MemoryStream())
                 {
                     (new LZ11()).Compress(dstream, decompressed.Length, cstream);
+                    return cstream.ToArray();
+                }
+            }
+        }
+        private byte[] LZ10Compress(byte[] decompressed)
+        {
+            using (MemoryStream dstream = new MemoryStream(decompressed))
+            {
+                using (MemoryStream cstream = new MemoryStream())
+                {
+                    (new LZ10()).Compress(dstream, decompressed.Length, cstream);
                     return cstream.ToArray();
                 }
             }
