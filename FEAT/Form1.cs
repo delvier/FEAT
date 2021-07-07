@@ -32,15 +32,6 @@ namespace FEAT
             RTB_Output.DragEnter += Form1_DragEnter;
             DragDrop += Form1_DragDrop;
             RTB_Output.DragDrop += Form1_DragDrop;
-            if (!TestforRuby())
-            {
-                B_RubyScript.Enabled = false;
-                AddLine(RTB_Output, "Warning: Ruby not found, disabling ruby script functions");
-            }
-            else if (TestforRuby())
-            {
-                B_RubyScript.Checked = true;
-            }
             B_Align128.Click += (sender, EventArgs) => { int align = 128; AlignButton_Click(sender, EventArgs, align); };
             B_Align64.Click += (sender, EventArgs) => { int align = 64; AlignButton_Click(sender, EventArgs, align); };
             B_Align32.Click += (sender, EventArgs) => { int align = 32; AlignButton_Click(sender, EventArgs, align); };
@@ -218,14 +209,8 @@ namespace FEAT
             {
                 string ext = Path.GetExtension(path).ToLower();
                 string filename = Path.GetFileNameWithoutExtension(path).ToLower();
-                var yaz0 = false;
-                using (var fs = File.OpenRead(path))
-                {
-                    if (fs.Length > 4 && fs.ReadByte() == 'Y' && fs.ReadByte() == 'a' && fs.ReadByte() == 'z' && fs.ReadByte() == '0')
-                    {
-                        yaz0 = true;
-                    }
-                }
+                string magic = GetMagic(File.ReadAllBytes(path));
+
                 if (B_BatchMode.Checked)
                 {
                     var cmp = LZ11Compress(File.ReadAllBytes(path));
@@ -294,7 +279,7 @@ namespace FEAT
                         AddLine(RTB_Output, string.Format("{0} is not lz13 compressed", Path.GetFileName(path)));
                     }
                 }
-                else if (yaz0)
+                else if (magic == "Yaz0")
                 {
                     var cmp = File.ReadAllBytes(path);
                     File.WriteAllBytes(path + ".dec", Decompress(cmp));
@@ -377,20 +362,6 @@ namespace FEAT
                         FE3D_Bin.ExtractBin(path);
                         AddLine(RTB_Output, "Done");
                     }
-                    /*Ruby Method
-                    else if (B_RubyScript.Checked)
-                    {
-                        if (!File.Exists("asset_pack.rb"))
-                        {
-                            AddLine(RTB_Output, "Ruby Script Not Found");
-                        }
-                        else
-                        {
-                            RunRubyScript("asset_pack.rb", string.Format(" -u \"{0}\"", path));
-                            AddLine(RTB_Output, string.Format("Decompiled {0} to {1}", Path.GetFileName(path), Path.GetFileName(path) + ".txt"));
-                        }
-                    }
-                    */
                     if (B_DeleteAfter.Checked)
                         File.Delete(path);
                 }
@@ -402,18 +373,18 @@ namespace FEAT
                         FE3D_Bin.ExtractArc(Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + Path.DirectorySeparatorChar, filedata);
                     AddLine(RTB_Output, "Done");
                 }
-                else if (ext == ".ctpk")
+                else if (magic == "CPTK")
                 {
                     AddText(RTB_Output, string.Format("Extracting images from {0}...", Path.GetFileName(path)));
                     Ctpk.Read(path, Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path));
                     AddLine(RTB_Output, "Complete!");
                 }
-                else if (ext == ".bch" || ext == ".t" || ext == ".bcmdl" || ext == ".m")
+                else if (magic == "BCH" || magic == "CGFX")
                 {
                     AddText(RTB_Output, string.Format("Extracting textures from {0}...", Path.GetFileName(path)));
                     if (ext == ".t" || ext == ".bcmdl" || ext == ".m")
                     {
-                        Scene = SPICA.Formats.CtrGfx.Gfx.Open(path).ToH3D();
+                        Scene = Gfx.Open(path).ToH3D();
                     }
                     else
                     {
@@ -480,84 +451,21 @@ namespace FEAT
                             Array.Copy(cmp, 1, cmp2, 1, 3);
                             File.WriteAllBytes(outname + ".lz", cmp2);
                     }
-                    else if (B_RubyScript.Checked)
+                    else
                     {
-                        if (!File.Exists("asset_pack.rb"))
-                        {
-                            AddLine(RTB_Output, "Ruby Script Not Found");
-                        }
-                        else
-                        {
-                            string outfile = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path);
-                            RunRubyScript("asset_pack.rb", string.Format(" -p \"{0}\" \"{1}\"", path, outfile));
-                            AddLine(RTB_Output, string.Format("Compiled {0} to {1}", Path.GetFileName(path), Path.GetFileName(outfile)));
-
-                            var cmp = LZ11Compress(File.ReadAllBytes(outfile));
-                            byte[] cmp2 = new byte[cmp.Length + 4];
-                              
-                            cmp2[0] = 0x13;
-                            Array.Copy(cmp, 0, cmp2, 4, cmp.Length);
-                            Array.Copy(cmp, 1, cmp2, 1, 3);
-                            File.WriteAllBytes(outfile + ".lz", cmp2);
-                            AddLine(RTB_Output, string.Format("Compressed {0} to {1}", Path.GetFileName(outfile), Path.GetFileName(outfile) + ".lz"));
-                        }
-                    }
-                }
-                else if (filename == "rom1" || filename == "rom2" || filename == "rom3" || filename == "rom4" || filename == "rom5" || filename == "rom6")
-                {
-                    if (B_RubyScript.Checked)
-                    {
-                        if (!File.Exists("asset_pack.rb"))
-                        {
-                            AddLine(RTB_Output, "Ruby Script Not Found");
-                        }
-                        else
-                        {
-                            if (ext == ".txt")
-                            {
-                                string outfile = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path);
-                                RunRubyScript("asset_pack.rb", string.Format(" -p \"{0}\" \"{1}\"", path, outfile));
-                                AddLine(RTB_Output, string.Format("Compiled {0} to {1}", Path.GetFileName(path), Path.GetFileName(outfile)));
-
-
-                                var cmp = LZ11Compress(File.ReadAllBytes(outfile));
-                                byte[] cmp2 = new byte[cmp.Length + 4];
-
-                                cmp2[0] = 0x13;
-                                Array.Copy(cmp, 0, cmp2, 4, cmp.Length);
-                                Array.Copy(cmp, 1, cmp2, 1, 3);
-                                File.WriteAllBytes(outfile + ".lz", cmp2);
-                                AddLine(RTB_Output, string.Format("Compressed {0} to {1}", Path.GetFileName(outfile), Path.GetFileName(outfile) + ".lz"));
-                            }
-                            else
-                            {
-                                RunRubyScript("asset_pack.rb", string.Format(" -u \"{0}\"", path));
-                                AddLine(RTB_Output, string.Format("Decompiled {0} to {1}", Path.GetFileName(path), Path.GetFileName(path) + ".txt"));
-                            }
-                        }
-                    }
-                }
-                else if (filename == "aset" && B_RubyScript.Checked)
-                {
-                    if (ext == ".yml")
-                    {
-                        string outfile = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path);
-                        RunRubyScript("aset_extract.rb", string.Format(" -p \"{0}\" \"{1}\"", path, outfile));
-                        AddLine(RTB_Output, string.Format("Compiled {0} to {1}", Path.GetFileName(path), Path.GetFileName(outfile)));
+                        string outfile = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".bin";
+                        AddText(RTB_Output, string.Format("Compiling {0} to {1}...", Path.GetFileName(path), Path.GetFileName(outfile)));
+                        FE3D_Bin.PackBin(path);
+                        AddLine(RTB_Output, "Complete!");
 
                         var cmp = LZ11Compress(File.ReadAllBytes(outfile));
                         byte[] cmp2 = new byte[cmp.Length + 4];
-
+                             
                         cmp2[0] = 0x13;
                         Array.Copy(cmp, 0, cmp2, 4, cmp.Length);
                         Array.Copy(cmp, 1, cmp2, 1, 3);
                         File.WriteAllBytes(outfile + ".lz", cmp2);
-                        AddLine(RTB_Output, string.Format("Decompiled {0} to {1}", Path.GetFileName(path), Path.GetFileName(path) + ".txt"));
-                    }
-                    else
-                    {
-                        RunRubyScript("aset_extract.rb", string.Format(" -u \"{0}\"", path));
-                        AddLine(RTB_Output, string.Format("Decompiled {0} to {1}", Path.GetFileName(path), Path.GetFileName(path) + ".txt"));
+                        AddLine(RTB_Output, string.Format("Compressed {0} to {1}", Path.GetFileName(outfile), Path.GetFileName(outfile) + ".lz"));
                     }
                 }
                 else if (ext == ".icn")
@@ -569,6 +477,14 @@ namespace FEAT
                     AddLine(RTB_Output, "Complete!");
                 }
             }
+        }
+
+        private string GetMagic(byte[] inbytes)
+        {
+            byte[] header = new byte[4];
+            Array.Copy(inbytes, 0, header, 0, 4);
+            string magic = Encoding.UTF8.GetString(header).Replace("\0", "");
+            return magic;
         }
 
         private byte[] CTPKtoICN(byte[] icon)
@@ -612,248 +528,6 @@ namespace FEAT
                 instream.CopyTo(memoryStream);
                 return memoryStream.ToArray();
             }
-        }
-
-        private bool TestforRuby()
-        {
-            using (var proc = new Process())
-            {
-                try
-                {
-                    var startInfo = new ProcessStartInfo(@"ruby");
-                    startInfo.Arguments = "--version";
-                    startInfo.UseShellExecute = false;
-                    startInfo.CreateNoWindow = true;
-                    proc.StartInfo = startInfo;
-                    proc.Start();
-                }
-                catch (System.ComponentModel.Win32Exception)
-                {
-                    return false;
-                }
-                return true;
-            }
-        }
-
-        private void RunRubyScript(string filePath, string args)
-        {
-            using (var proc = new Process())
-            {
-                var startInfo = new ProcessStartInfo(@"ruby");
-                startInfo.Arguments = filePath + args;
-                startInfo.UseShellExecute = false;
-                startInfo.CreateNoWindow = true;
-                proc.StartInfo = startInfo;
-                proc.Start();
-                proc.WaitForExit();
-                if(proc.ExitCode == 0)
-                    return;
-            }
-        }
-
-        private void ExtractFireEmblemArchive(string outdir, byte[] archive)
-        {
-            if (Directory.Exists(outdir))
-                Directory.Delete(outdir, true);
-            Directory.CreateDirectory(outdir);
-
-            var ShiftJIS = Encoding.GetEncoding(932);
-
-            uint MetaOffset = BitConverter.ToUInt32(archive, 4) + 0x20;
-            uint FileCount = BitConverter.ToUInt32(archive, 0x8);
-
-            bool awakening = (BitConverter.ToUInt32(archive, 0x20) != 0);
-
-            AddText(RTB_Output, string.Format("Extracting {0} files from {1} to {2}...", FileCount, Path.GetFileName(outdir.Substring(0, outdir.Length - 1)) + ".arc", Path.GetFileName(outdir.Substring(0, outdir.Length - 1)) + "/"));
-
-            for (int i = 0; i < FileCount; i++)
-            {
-                int FileMetaOffset = 0x20 + BitConverter.ToInt32(archive, (int)MetaOffset + 4 * i);
-                int FileNameOffset = BitConverter.ToInt32(archive, FileMetaOffset) + 0x20;
-                // int FileIndex = BitConverter.ToInt32(archive, FileMetaOffset + 4);
-                uint FileDataLength = BitConverter.ToUInt32(archive, FileMetaOffset + 8);
-                int FileDataOffset = BitConverter.ToInt32(archive, FileMetaOffset + 0xC) + (awakening ? 0x20 : 0x80);
-                byte[] file = new byte[FileDataLength];
-                Array.Copy(archive, FileDataOffset, file, 0, FileDataLength);
-                string outpath = outdir + ShiftJIS.GetString(archive.Skip(FileNameOffset).TakeWhile(b => b != 0).ToArray());
-                if (!Directory.Exists(Path.GetDirectoryName(outpath)))
-                    Directory.CreateDirectory(Path.GetDirectoryName(outpath));
-                File.WriteAllBytes(outpath, file);
-            }
-
-            AddLine(RTB_Output, "Complete!");
-        }
-
-        private void CreateFireEmblemArchive(string outdir, string newname)
-        {
-            Console.WriteLine("Creating archive {0}", Path.GetFileName(newname));
-            FileStream newfilestream = File.Create(newname);
-            string[] files = Directory.GetFiles(outdir, "*", SearchOption.AllDirectories);
-
-            uint FileCount = (uint)files.Length;
-            Console.WriteLine("{0} files detected!", FileCount);
-
-            var ShiftJIS = Encoding.GetEncoding(932);
-
-            BinaryStream newFile = new BinaryStream(newfilestream);
-
-            MemoryStream infos = new MemoryStream();
-            BinaryWriter FileInfos = new BinaryWriter(infos);
-
-
-            Console.WriteLine("Creating dummy header...");
-            newFile.Write(0);
-
-            newFile.Write(0);
-            newFile.Write(FileCount);
-            newFile.Write(FileCount + 3);
-
-            byte nil = 0;
-            if (B_ArcPadding.Checked)
-            {
-                for (int i = 0; i < 0x70; i++)
-                {
-                    newFile.Write(nil);
-                }
-            }
-            else
-            {
-                for (int i = 0; i < 0x10; i++)
-                {
-                    newFile.Write(nil);
-                }
-            }
-            int z = 0;
-            foreach (string fileName in files)
-            {
-                Console.WriteLine("Adding file {0}...", fileName.Replace(outdir + Path.DirectorySeparatorChar, "").Replace("\\", "/"));
-                byte[] filetoadd = File.ReadAllBytes(fileName);
-                uint fileoff = (uint)newFile.Tell();
-                newFile.Write(filetoadd); //File is written to arc
-                uint alignment = 0;
-                if (!B_Align0.Checked)
-                {
-                    if (B_Align16.Checked)
-                        alignment = 16;
-                    if (B_Align32.Checked)
-                        alignment = 32;
-                    if (B_Align64.Checked)
-                        alignment = 64;
-                    if (B_Align128.Checked)
-                        alignment = 128;
-                    while ((int)newFile.Tell() % alignment != 0)
-                    {
-                        newFile.Write(nil); //writes between file padding
-                    }
-                }
-                FileInfos.Write(0);
-                FileInfos.Write(z);
-                FileInfos.Write(filetoadd.Length);
-                if (B_ArcPadding.Checked)
-                {
-                    FileInfos.Write(fileoff - 0x80);
-                }
-                else
-                {
-                    FileInfos.Write(fileoff - 0x20);
-                }
-                z++;
-            }
-
-            long countinfo = newFile.Tell();
-            newFile.Write(FileCount);
-            long infopointer = newFile.Tell();
-            Console.WriteLine("Adding dummy FileInfos...");
-
-            infos.Seek(0, SeekOrigin.Begin);
-            var infopos = newFile.Tell();
-            newFile.Write(infos.ToArray());
-
-            Console.WriteLine("Rewriting header...");
-            long metapos = newFile.Tell();
-            newFile.Seek(4, SeekOrigin.Begin);
-            newFile.Write((uint)metapos - 0x20);
-
-            newFile.Seek(metapos, SeekOrigin.Begin);
-
-            Console.WriteLine("Adding FileInfos pointer...");
-            for (int i = 0; i < FileCount; i++)
-            {
-                newFile.Write((uint)((infopointer + i * 16) - 0x20));
-            }
-
-            Console.WriteLine("Adding Dummy Pointer 2 Region...");
-
-            if (B_ArcPadding.Checked)
-            {
-                newFile.Write((uint)0x60);
-            }
-            else
-            {
-                newFile.Write((uint)0x0);
-            }
-            newFile.Write(0);
-            newFile.Write((uint)(countinfo - 0x20));
-            newFile.Write((uint)5);
-            newFile.Write((uint)(countinfo + 4 - 0x20));
-            newFile.Write((uint)0xB);
-            long ptr2region = newfilestream.Position;
-            for (int i = 0; i < FileCount; i++)
-            {
-                newFile.Write((uint)((countinfo + 4) + i * 16) - 0x20);
-                if (i == 0)
-                {
-                    newFile.Write((uint)0x10);
-                }
-                else
-                {
-                    if (i == 1)
-                    {
-                        newFile.Write((uint)0x1C);
-                    }
-                    else
-                    {
-                        newFile.Write((uint)(0x1C + (10 * (i - 1))));
-                    }
-                }
-            }
-
-            Console.WriteLine("Adding Filenames and Rewriting Pointer 2 Region...");
-            var datcount = new byte[] { 0x44, 0x61, 0x74, 0x61, 0x00, 0x43, 0x6F, 0x75, 0x6E, 0x74, 0x00, 0x49, 0x6E, 0x66, 0x6F, 0x00 };
-            newFile.Write(datcount);
-            int y = 0;
-            int nameloc = 16;
-
-            foreach (string fileName in files)
-            {
-                FileInfos.Seek(y * 16, SeekOrigin.Begin);
-                long namepos = newFile.Tell();
-                FileInfos.Write((uint)namepos - 0x20);
-                newFile.Write(ShiftJIS.GetBytes(fileName.Replace(outdir + Path.DirectorySeparatorChar, "").Replace("\\", "/")));
-                newFile.Write(nil);
-                long NameEnd = newfilestream.Position;
-                long pointerpos = (ptr2region + 4 + (y * 8));
-                newFile.Seek(pointerpos, SeekOrigin.Begin);
-                newFile.Write(nameloc);
-                newFile.Seek(NameEnd, SeekOrigin.Begin);
-                byte[] onlyfilename = ShiftJIS.GetBytes(fileName.Replace(outdir + Path.DirectorySeparatorChar, "").Replace("\\", "/"));
-                nameloc = nameloc + onlyfilename.Length + 1;
-                y++;
-            }
-            Console.WriteLine("Rewriting FileInfos...");
-            newFile.Seek(infopos, SeekOrigin.Begin);
-
-            infos.Seek(0, SeekOrigin.Begin);
-            newFile.Write(infos.ToArray());
-
-            Console.WriteLine("Finishing the job...");
-            newFile.Seek(0, SeekOrigin.Begin);
-            UInt32 newlength = (UInt32)newFile.BaseStream.Length;
-            newFile.Write(newlength);
-
-            Console.WriteLine("Done!");
-            newFile.Close();
-
         }
 
         private byte[] MakeFireEmblemMessageArchive(string[] lines)

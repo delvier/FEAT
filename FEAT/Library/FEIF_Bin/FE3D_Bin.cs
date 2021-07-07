@@ -1,6 +1,7 @@
 ﻿using GovanifY.Utility;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -10,6 +11,36 @@ namespace FEAT.Library.FE3D_Bin
 {
     class FE3D_Bin
     {
+        #region Code Helpers
+        private static uint ReadUint32FromArray(byte[] array)
+        {
+            return (uint)(array[0] | (array[1] << 8) | (array[2] << 16) | (array[3] << 24));
+        }
+        private static uint ReadUint32FromArray(byte[] array, uint index)
+        {
+            return (uint)(array[index + 0] | (array[index + 1] << 8) | (array[index + 2] << 16) | (array[index + 3] << 24));
+        }
+
+        private static byte[] ConvertHexStringToByteArray(string hexString)
+        {
+            if (hexString.Length % 2 != 0)
+            {
+                throw new ArgumentException(String.Format(CultureInfo.InvariantCulture, "The binary key cannot have an odd number of digits: {0}", hexString));
+            }
+
+            byte[] data = new byte[hexString.Length / 2];
+            for (int index = 0; index < data.Length; index++)
+            {
+                string byteValue = hexString.Substring(index * 2, 2);
+                data[index] = byte.Parse(byteValue, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+            }
+
+            return data;
+        }
+        #endregion
+
+        //Arc files are a form of FE3D bin but store files instead of data
+        //because of this they can be packed and unpacked differently than normal
         public static void CreateArc(string inpath, int Alignment, bool Padding)
         {
             string outfile = $"{Path.GetDirectoryName(inpath)}//{Path.GetFileNameWithoutExtension(inpath)}.arc";
@@ -202,21 +233,22 @@ namespace FEAT.Library.FE3D_Bin
             }
         }
 
-        public class PTR1
-        {
-            public uint Location { get; set; }
-            public uint Destination { get; set; }
-            public uint ID { get; set; }
-        }
-
-        public class PTR2
-        {
-            public uint Location { get; set; }
-            public uint Destination { get; set; }
-        }
+        //location of the ptr1 should never the same but they are able to point the same place
+        //on the other side the destination of the ptr2 is unique because of their lack  
+        //of data in the main section they can occupy the same location as other pointers
+        static Dictionary<uint, uint> PTR1; //location key, destination value
+        static Dictionary<uint, uint> PTR1_des; //destination key, id value
+        static Dictionary<uint, uint> PTR2; //destination key, location value
+        static Dictionary<string, uint> PTR2_Data;
+        static Dictionary<uint, string> PTR1_Data;
+        static Dictionary<string, uint> StringSection;
 
         public static void ExtractBin(string inpath)
         {
+            PTR1 = new Dictionary<uint, uint>();
+            PTR1_des = new Dictionary<uint, uint>();
+            PTR2 = new Dictionary<uint, uint>();
+
             //open file stream and then open a binary stream
             FileStream fileStream = new FileStream(inpath, FileMode.Open);
             BinaryStream bin = new BinaryStream(fileStream, true, false);
@@ -227,41 +259,47 @@ namespace FEAT.Library.FE3D_Bin
             uint datasize = bin.ReadUInt32();
             uint ptr1count = bin.ReadUInt32();
             uint ptr2count = bin.ReadUInt32();
+            bin.Seek(0x10, SeekOrigin.Current);
+            byte[] datasection = bin.ReadBytes((int)datasize);
 
-            //read pointer region 1 locations and destinations then store them for later
-            bin.Seek(0x20 + datasize, SeekOrigin.Begin);
-            List<PTR1> ptr1List = new List<PTR1>();
-            uint id = 0;
-            for (int i = 0; i < ptr1count; i++)
+            //read pointer region 1 info
+            for (uint i = 0; i < ptr1count; i++)
             {
-                uint ptr1 = bin.ReadUInt32();
-                uint pos = (uint)bin.Tell();
+                uint loc = bin.ReadUInt32();
+                uint des = ReadUint32FromArray(datasection, loc);
 
-                bin.Seek(ptr1 + 0x20, SeekOrigin.Begin);
-                uint pointer = bin.ReadUInt32();
-
-                PTR1 pointer1 = ptr1List.Find(x => (x.Destination == pointer));
-                if (pointer1 == null)
+                try 
                 {
-                    ptr1List.Add(new PTR1 { Location = ptr1, Destination = pointer, ID = id });
-                    id++;
+                    PTR1.Add(loc, des);
                 }
-                else
+                catch (ArgumentException)
                 {
-                    ptr1List.Add(new PTR1 { Location = ptr1, Destination = pointer, ID = pointer1.ID });
+                    Console.WriteLine("Key Already Exist in PTR1");
                 }
-                
-                bin.Seek(pos, SeekOrigin.Begin);
+                try
+                {
+                    PTR1_des.Add(des, i);
+                }
+                catch (ArgumentException)
+                {
+                    Console.WriteLine("Key Already Exist in PTR1_des");
+                }
             }
 
             //read pointer region 2 locations and destinations then store them for later
-            List<PTR2> ptr2List = new List<PTR2>();
             for (int i = 0; i < ptr2count; i++)
             {
-                uint ptr2 = bin.ReadUInt32();
-                uint pointer = bin.ReadUInt32();
+                uint loc = bin.ReadUInt32();
+                uint des = bin.ReadUInt32();
 
-                ptr2List.Add(new PTR2 { Location = ptr2, Destination = pointer });
+                try
+                {
+                    PTR2.Add(des, loc);
+                }
+                catch
+                {
+                    Console.WriteLine("Key Already Exist in PTR1");
+                }
             }
 
             //log the location after the pointer regions and get the raw bytes for the string array
@@ -282,37 +320,38 @@ namespace FEAT.Library.FE3D_Bin
             {
                 for (int i = 0; i < datasize / 4; i++)
                 {
-                    uint currentpos = Convert.ToUInt32(bin.Tell());
+                    uint currentpos = Convert.ToUInt32(bin.Tell() - 0x20);
 
                     //Check for ptr1 destinations and write them before the ptr2
-                    if (ptr1List.Any(x => (x.Destination == currentpos - 0x20)))
+                    if (PTR1_des.ContainsKey(currentpos))
                     {
-                        var ptr1 = ptr1List.Find(x => (x.Destination == currentpos - 0x20));
-                        outstream.WriteLine($"PTR1: {ptr1.ID}");
+                        PTR1_des.TryGetValue(currentpos, out uint value);
+                        outstream.WriteLine($"PTR1: {value}");
                     }
 
                     //Check if there is a ptr2 for the current position and write it before the data
-                    foreach (var ptr2 in ptr2List.FindAll(x => (x.Location == currentpos -0x20)))
+                    foreach ( KeyValuePair<uint, uint> ptr2 in PTR2)
                     {
-                        if (currentpos - 0x20 == ptr2.Location)
+                        if (currentpos == ptr2.Value)
                         {
-                            string ptr2data = ShiftJIS.GetString(rawstrings.Skip(Convert.ToInt32(ptr2.Destination)).TakeWhile(b => b != 0).ToArray()).Replace("－", "−");
+                            string ptr2data = ShiftJIS.GetString(rawstrings.Skip(Convert.ToInt32(ptr2.Key)).TakeWhile(b => b != 0).ToArray()).Replace("－", "−");
                             outstream.WriteLine($"PTR2: {ptr2data}");
                         }
                     }
 
                     //Check if there is a ptr1 for the current position otherwise right the bytes
-                    if (ptr1List.Any(x => (x.Location == currentpos - 0x20)))
+                    if (PTR1.ContainsKey(currentpos))
                     {
-                        var ptr1 = ptr1List.Find(x => (x.Location == currentpos - 0x20));
-                        if (ptr1.Destination > datasize)
+                        PTR1.TryGetValue(currentpos, out uint value);
+                        if (value > datasize)
                         {
-                            string ptr1data = ShiftJIS.GetString(rawstrings.Skip(Convert.ToInt32(ptr1.Destination - (datasize + (ptr1count * 4) + (ptr2count * 8)))).TakeWhile(b => b != 0).ToArray());
+                            string ptr1data = ShiftJIS.GetString(rawstrings.Skip(Convert.ToInt32(value - (datasize + (ptr1count * 4) + (ptr2count * 8)))).TakeWhile(b => b != 0).ToArray());
                             outstream.WriteLine(ptr1data);
                         }
                         else
                         {
-                            outstream.WriteLine($"POINTER1: {ptr1.ID}");
+                            PTR1_des.TryGetValue(value, out uint value2);
+                            outstream.WriteLine($"POINTER1: {value2}");
                         }
                         bin.Seek(4, SeekOrigin.Current);
                     }
@@ -321,11 +360,150 @@ namespace FEAT.Library.FE3D_Bin
                         byte[] data = bin.ReadBytes(4);
                         outstream.WriteLine($"0x{BitConverter.ToString(data).Replace("-", "")}");
                     }
-                    
+                    Console.WriteLine($"Processed {currentpos}");
                 }
             }
             bin.Close();
             fileStream.Close();
+        }
+
+        //bin files have 5 major sections, header, main data, pointer region 1 and 2, and the end region
+        //the header is formatted with file size, data size, num of ptr1, num of prt2, and 16 bytes of padding
+        //main sections just holds all the data that the game using exclusing strings
+        //pointer region 1 is a list of where each pointer in the main section is, each item is 4 bytes
+        //pointer region 2 is a list of embbed lables in side the main section which doesn't show as data, each item is 8 bytes, location of pointer and it's string location
+        //the end secions hold a list of all the strings in null terminated shift-jis, first are the ptr2, then the prt1
+        public static void PackBin(string inpath)
+        {
+            string[] txtfile = File.ReadAllLines(inpath);
+            FileStream newfilestream = File.Create(inpath.Replace(".txt", ".bin"));
+            PTR1 = new Dictionary<uint, uint>();
+            PTR1_des = new Dictionary<uint, uint>();
+            PTR2_Data = new Dictionary<string, uint>();
+            PTR1_Data = new Dictionary<uint, string>();
+            StringSection = new Dictionary<string, uint>();
+            var ShiftJIS = Encoding.GetEncoding(932);
+
+            using (BinaryStream outbin = new BinaryStream(newfilestream))
+            {
+                //Write innital pass included dummy sections, main data, and strings
+                //write dummy header
+                for (int i = 0; i < 0x20; i++)
+                {
+                    outbin.Write((byte)0);
+                }
+
+                //Phrase Text file
+                foreach (string line in txtfile)
+                {
+                    long CurrentPos = outbin.Tell();
+                    if (line.StartsWith("0x")) //Convert the raw data string into bytes
+                    {
+                        uint data = Convert.ToUInt32(ReadUint32FromArray(ConvertHexStringToByteArray(line.Replace("0x",""))));
+                        outbin.Write(data);
+                    }
+                    else if (line.StartsWith("POINTER1")) //Write dummy bytes and log pointer number
+                    {
+                        PTR1.Add((uint)CurrentPos, Convert.ToUInt32(line.Replace("POINTER1: ","")));
+                        outbin.Write((uint)0);
+                    }
+                    else if (line.StartsWith("PTR1")) //Log location to for Pointer1 rewrite
+                    {
+                        PTR1_des.Add(Convert.ToUInt32(line.Replace("PTR1: ", "")), (uint)CurrentPos);
+                    }
+                    else if (line.StartsWith("PTR2")) //Log string and Position
+                    {
+                        PTR2_Data.Add(line.Replace("PTR2: ", ""), (uint)CurrentPos);
+                    }
+                    else //Log Location and string to write later
+                    {
+                        PTR1_Data.Add((uint)CurrentPos, line);
+                        outbin.Write((uint)0);
+                    }
+                }
+                int EndofDataSecton = (int)outbin.Tell();
+
+                uint ptr2Count;
+                uint ptr1Count = (uint)PTR1.Count + (uint)PTR1_Data.Count;
+                if (PTR2_Data == null)
+                    ptr2Count = 0;
+                else
+                    ptr2Count = (uint)PTR2_Data.Count;
+
+                //write dummy ptr sections
+                for (int i = 0; i < ptr1Count; i++)
+                {
+                    outbin.Write((uint)0);
+                }
+                for (int i = 0; i < ptr2Count; i++)
+                {
+                    outbin.Write((long)0);
+                }
+                int BeginningOfTheEnd = (int)outbin.Tell();
+
+                //sort strings and remove dupicates
+                List<string> strings = new List<string>();
+                foreach (var data in PTR2_Data)
+                {
+                    if (!strings.Contains(data.Key))
+                        strings.Add(data.Key);
+                }
+                foreach (var data in PTR1_Data)
+                {
+                    if (!strings.Contains(data.Value))
+                        strings.Add(data.Value);
+                }
+
+                //Write String Section
+                foreach (string line in strings)
+                {
+                    long CurrentPos = outbin.Tell();
+                    StringSection.Add(line, (uint)CurrentPos);
+                    byte[] linebytes = ShiftJIS.GetBytes(line.Replace("\\", "/"));
+                    outbin.Write(linebytes);
+                    outbin.Write((byte)0);
+                }
+
+                //Write Second pass with count data and pointers
+                int EOF = (int)outbin.Tell();
+                outbin.Seek(0, SeekOrigin.Begin);
+
+                //Write Header info
+                outbin.Write(EOF);
+                outbin.Write(EndofDataSecton - 0x20);
+                outbin.Write(ptr1Count);
+                outbin.Write(ptr2Count);
+
+                List<uint> PTR1Sec = new List<uint>();
+                //Write PTR1 data pointers
+                foreach (var data in PTR1)
+                {
+                    outbin.Seek(data.Key, SeekOrigin.Begin);
+                    outbin.Write(PTR1_des[data.Value] - 0x20);
+                    PTR1Sec.Add(data.Key);
+                }
+                //Write PTR1 string pointers
+                foreach (var data in PTR1_Data)
+                {
+                    outbin.Seek(data.Key, SeekOrigin.Begin);
+                    outbin.Write(StringSection[data.Value] - 0x20);
+                    PTR1Sec.Add(data.Key);
+                }
+                //Write the pointer list to the PTR1 section
+                outbin.Seek(EndofDataSecton, SeekOrigin.Begin);
+                foreach (uint pointer in PTR1Sec)
+                {
+                    outbin.Write(pointer - 0x20);
+                }
+                //Write Data for PTR2 section
+                foreach (var data in PTR2_Data)
+                {
+                    outbin.Write(data.Value - 0x20);
+                    outbin.Write((uint)(StringSection[data.Key] - BeginningOfTheEnd));
+                }
+
+            }
+            newfilestream.Close();
         }
     }
 }

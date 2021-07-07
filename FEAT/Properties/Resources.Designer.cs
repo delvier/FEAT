@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace FEAT.Properties {
+namespace Fire_Emblem_Awakening_Archive_Tool.Properties {
     using System;
     
     
