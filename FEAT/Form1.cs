@@ -881,7 +881,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             {
                 int ind = lines[i].IndexOf(": ", StringComparison.Ordinal);
                 Names[i - 6] = lines[i].Substring(0, ind);
-                Messages[i - 6] = lines[i].Substring(ind + 2, lines[i].Length - (ind + 2)).Replace("\\n", "\n").Replace("\\r", "\r").Replace("\\x01", "\x01").Replace("\\x02", "\x02").Replace("\\x03", "\x03").Replace("\\x04", "\x04").Replace("\\x05", "\x05").Replace("\\x06", "\x06").Replace("\\x07", "\x07").Replace("\\x08", "\x08").Replace("\\x0b", "\x0b").Replace("\\x0c", "\x0c").Replace("\\x0f", "\x0f").Replace("\\x0e", "\x0e").Replace("\\x10", "\x10").Replace("\\x11", "\x11").Replace("\\x12", "\x12").Replace("\\x13", "\x13").Replace("\\x14", "\x14"); ;
+                Messages[i - 6] = lines[i].Substring(ind + 2, lines[i].Length - (ind + 2)).Replace("\\n", "\n").Replace("\\r", "\r").Replace("\\x01", "\x01").Replace("\\x02", "\x02").Replace("\\x03", "\x03").Replace("\\x04", "\x04").Replace("\\x05", "\x05").Replace("\\x06", "\x06").Replace("\\x07", "\x07").Replace("\\x08", "\x08").Replace("\\x09", "\x09").Replace("\\x0b", "\x0b").Replace("\\x0c", "\x0c").Replace("\\x0f", "\x0f").Replace("\\x0e", "\x0e").Replace("\\x10", "\x10").Replace("\\x11", "\x11").Replace("\\x12", "\x12").Replace("\\x13", "\x13").Replace("\\x14", "\x14").Replace("\\x15", "\x15");
             }
             byte[] Header = new byte[0x20];
             byte[] StringTable;
@@ -996,7 +996,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                 int MessageLen = 0;
                 while (BitConverter.ToUInt16(archive, MessageOffset + MessageLen) != 0)
                     MessageLen += 1; */
-                Messages[i] = ShiftJIS.GetString(archive.Skip(MessageOffset).TakeWhile(b => b != 0).ToArray()).Replace("\n", "\\n").Replace("\r", "\\r").Replace("\x01", "\\x01").Replace("\x02", "\\x02").Replace("\x03", "\\x03").Replace("\x04", "\\x04").Replace("\x05", "\\x05").Replace("\x06", "\\x06").Replace("\x07", "\\x07").Replace("\x08", "\\x08").Replace("\x0b", "\\x0b").Replace("\x0c", "\\x0c").Replace("\x0f", "\\x0f").Replace("\x0e", "\\x0e").Replace("\x10", "\\x10").Replace("\x11", "\\x11").Replace("\x12", "\\x12").Replace("\x13", "\\x13").Replace("\x14", "\\x14");
+                Messages[i] = ShiftJIS.GetString(archive.Skip(MessageOffset).TakeWhile(b => b != 0).ToArray()).Replace("\n", "\\n").Replace("\r", "\\r").Replace("\x01", "\\x01").Replace("\x02", "\\x02").Replace("\x03", "\\x03").Replace("\x04", "\\x04").Replace("\x05", "\\x05").Replace("\x06", "\\x06").Replace("\x07", "\\x07").Replace("\x08", "\\x08").Replace("\x0b", "\\x0b").Replace("\x0c", "\\x0c").Replace("\x0f", "\\x0f").Replace("\x0e", "\\x0e").Replace("\x10", "\\x10").Replace("\x11", "\\x11").Replace("\x12", "\\x12").Replace("\x13", "\\x13").Replace("\x14", "\\x14").Replace("\x15", "\\x15");
                 int NameOffset = (int)NamesOffset + BitConverter.ToInt32(archive, (int)StringMetaOffset + (0x8 * i) + 4);
                 MessageNames[i] = ShiftJIS.GetString(archive.Skip(NameOffset).TakeWhile(b => b != 0).ToArray());
             }
