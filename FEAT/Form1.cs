@@ -467,12 +467,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                         File.WriteAllBytes(outname, arch);
                         AddLine(RTB_Output, "Complete!");
                         byte[] cmp = LZ10Compress(arch);
-                        byte[] cmp2 = new byte[cmp.Length + 4];
-
-                        cmp2[0] = 0x13;
-                        Array.Copy(cmp, 0, cmp2, 4, cmp.Length);
-                        Array.Copy(cmp, 1, cmp2, 1, 3);
-                        File.WriteAllBytes(outname + ".lz", cmp2);
+                        File.WriteAllBytes(outname + ".lz", cmp);
                     }
                     else if (B_RubyScript.Checked)
                     {
@@ -873,7 +868,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
         {
             var ShiftJIS = Encoding.GetEncoding(932);
             int StringCount = lines.Length - 6;
-            string[] Messages = new string[StringCount];
+            List<byte>[] Messages = new List<byte>[StringCount];
             string[] Names = new string[StringCount];
             uint[] MPos = new uint[StringCount];
             uint[] NPos = new uint[StringCount];
@@ -881,7 +876,51 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             {
                 int ind = lines[i].IndexOf(": ", StringComparison.Ordinal);
                 Names[i - 6] = lines[i].Substring(0, ind);
-                Messages[i - 6] = lines[i].Substring(ind + 2, lines[i].Length - (ind + 2)).Replace("\\n", "\n").Replace("\\r", "\r").Replace("\\x01", "\x01").Replace("\\x02", "\x02").Replace("\\x03", "\x03").Replace("\\x04", "\x04").Replace("\\x05", "\x05").Replace("\\x06", "\x06").Replace("\\x07", "\x07").Replace("\\x08", "\x08").Replace("\\x09", "\x09").Replace("\\x0b", "\x0b").Replace("\\x0c", "\x0c").Replace("\\x0f", "\x0f").Replace("\\x0e", "\x0e").Replace("\\x10", "\x10").Replace("\\x11", "\x11").Replace("\\x12", "\x12").Replace("\\x13", "\x13").Replace("\\x14", "\x14").Replace("\\x15", "\x15");
+                var tmp = lines[i].Substring(ind + 2, lines[i].Length - (ind + 2)).Replace("\\n", "\n").Replace("\\r", "\r");
+                var temp = new List<Byte>();
+                int escape_check = 0;
+                int hex_code = 0;
+                foreach(char c in tmp)
+                {
+                    if (c == 92)
+                    {
+                        escape_check = 1;
+                    }
+                    else if (escape_check == 1)
+                    {
+                        if (c == 92)
+                        {
+                            temp.Add(92);
+                            escape_check = 0;
+                        }
+                        else if (c == 120)
+                        {
+                            escape_check++;
+                        }
+                        else
+                        {
+                            //Messages[i - 6] = "Escape Sequence Parse Error"; - not capable for list<byte>
+                            AddLine(RTB_Output, string.Format("Escape Sequence Parse Error"));
+                        }
+                    }
+                    else if (escape_check == 2)
+                    {
+                        hex_code = int.Parse(c.ToString(), System.Globalization.NumberStyles.HexNumber) * 16;
+                        escape_check++;
+                    } 
+                    else if (escape_check == 3)
+                    {
+                        hex_code += int.Parse(c.ToString(), System.Globalization.NumberStyles.HexNumber);
+                        temp.Add((byte)hex_code);
+                        hex_code = 0;
+                        escape_check = 0;
+                    }
+                    else
+                    {
+                        temp.AddRange(ShiftJIS.GetBytes(c.ToString()));
+                    }
+                }
+                Messages[i - 6] = temp;
             }
             byte[] Header = new byte[0x20];
             byte[] StringTable;
@@ -899,7 +938,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                     for (int i = 0; i < StringCount; i++)
                     {
                         MPos[i] = (uint)bw.BaseStream.Position;
-                        bw.Write(ShiftJIS.GetBytes(Messages[i]));
+                        bw.Write(Messages[i].ToArray());
                         bw.Write((byte)0);
                         // Single null is okay for DSFE except for the end
                     }
@@ -936,7 +975,18 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             Array.Copy(NamesTable, 0, Archive, Header.Length + StringTable.Length + MetaTable.Length, NamesTable.Length);
             return Archive;
         }
-
+        private uint HangToCustom(char input)
+        {
+            if (input >= 0xac00 && input < 0xd7a4)
+            {
+                int hangul = input - 0xac00;
+                int t = hangul % 28; // ㄱ = 1; ㄲ = 2; ㄳ = 3; ...; ㅎ = 27
+                int v = (hangul / 28) % 21; // ㅏ = 0; ㅐ = 1; ...; ㅢ = 19; ㅣ = 20
+                int l = (hangul / (28 * 21)) % 19; // ㄱ = 0; ㄲ = 1; ...; ㅎ = 18
+                int base_val = 0x88a1;
+            }
+            return 0x8148;
+        }
         private string ExtractFireEmblemMessageArchive(string outname, byte[] archive)
         {
             var ShiftJIS = Encoding.GetEncoding(932);
@@ -973,7 +1023,6 @@ namespace Fire_Emblem_Awakening_Archive_Tool
 
             return ArchiveName;
         }
-
         private string ExtractFEDSMessageArchive(string outname, byte[] archive)
         {
             //// Unlike 3DSFE text archives, simply a single null byte indicates the end of string.
@@ -996,7 +1045,19 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                 int MessageLen = 0;
                 while (BitConverter.ToUInt16(archive, MessageOffset + MessageLen) != 0)
                     MessageLen += 1; */
-                Messages[i] = ShiftJIS.GetString(archive.Skip(MessageOffset).TakeWhile(b => b != 0).ToArray()).Replace("\n", "\\n").Replace("\r", "\\r").Replace("\x01", "\\x01").Replace("\x02", "\\x02").Replace("\x03", "\\x03").Replace("\x04", "\\x04").Replace("\x05", "\\x05").Replace("\x06", "\\x06").Replace("\x07", "\\x07").Replace("\x08", "\\x08").Replace("\x0b", "\\x0b").Replace("\x0c", "\\x0c").Replace("\x0f", "\\x0f").Replace("\x0e", "\\x0e").Replace("\x10", "\\x10").Replace("\x11", "\\x11").Replace("\x12", "\\x12").Replace("\x13", "\\x13").Replace("\x14", "\\x14").Replace("\x15", "\\x15");
+                var tmp = ShiftJIS.GetString(archive.Skip(MessageOffset).TakeWhile(b => b != 0).ToArray()).Replace("\\", "\\\\").Replace("\n", "\\n").Replace("\r", "\\r");
+                var temp = new StringBuilder();
+                foreach (char c in tmp)
+                {
+                    if (c < 32)
+                    {
+                        temp.AppendFormat("\\x{0:x2}", (byte)c);
+                    } else
+                    {
+                        temp.Append(c);
+                    }
+                }
+                Messages[i] = temp.ToString();
                 int NameOffset = (int)NamesOffset + BitConverter.ToInt32(archive, (int)StringMetaOffset + (0x8 * i) + 4);
                 MessageNames[i] = ShiftJIS.GetString(archive.Skip(NameOffset).TakeWhile(b => b != 0).ToArray());
             }
