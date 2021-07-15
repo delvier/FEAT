@@ -1,3 +1,8 @@
+# FEAT (delvier fork)
+- Ability to handle NDS Fire Emblem message archives
+- Ability to archive NDS Fire Emblem messages with custom character table (reverse is not implemented)
+ - Place tab-separated (hex code and then a character) character table named ``table.tbl`` to the directory where the executable resides.
+
 # FEAT
 
 ![UI](example_pictures/UI_6.png)

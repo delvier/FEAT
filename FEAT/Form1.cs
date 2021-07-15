@@ -461,7 +461,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                     }
                     else if (textfile.Length > 6 && textfile[0].StartsWith("m/") && textfile[3] == "Message Name: Message" && textfile.Skip(6).All(s => s.Contains(": ")))
                     {
-                        AddText(RTB_Output, string.Format("Rebuilding Message Archive from {0}...", Path.GetFileName(path)));
+                        AddText(RTB_Output, string.Format("Rebuilding FEDS Message Archive from {0}...", Path.GetFileName(path)));
                         string outname = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".bin";
                         byte[] arch = MakeFEDSMessageArchive(textfile);
                         File.WriteAllBytes(outname, arch);
@@ -872,6 +872,16 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             string[] Names = new string[StringCount];
             uint[] MPos = new uint[StringCount];
             uint[] NPos = new uint[StringCount];
+
+            var table = new Dictionary<char, ushort>();
+            string table_loc = "table.txt";
+            string[] table_file = File.ReadAllLines(table_loc);
+            foreach (string line in table_file)
+            {
+                string[] splitted = line.Split('\t');
+                table.Add(splitted[1].ToCharArray()[0], ushort.Parse(splitted[0], System.Globalization.NumberStyles.HexNumber));
+            }
+            AddLine(RTB_Output, $"Table length: {table.Count()}");
             for (int i = 6; i < lines.Length; i++)
             {
                 int ind = lines[i].IndexOf(": ", StringComparison.Ordinal);
@@ -917,7 +927,13 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                     }
                     else
                     {
-                        temp.AddRange(ShiftJIS.GetBytes(c.ToString()));
+                        if (table.TryGetValue(c, out ushort code))
+                        {
+                            temp.AddRange(BitConverter.GetBytes(code).Reverse().ToArray());
+                        } else
+                        {
+                            temp.AddRange(ShiftJIS.GetBytes(c.ToString()));
+                        }
                     }
                 }
                 Messages[i - 6] = temp;
@@ -974,18 +990,6 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             Array.Copy(MetaTable, 0, Archive, Header.Length + StringTable.Length, MetaTable.Length);
             Array.Copy(NamesTable, 0, Archive, Header.Length + StringTable.Length + MetaTable.Length, NamesTable.Length);
             return Archive;
-        }
-        private uint HangToCustom(char input)
-        {
-            if (input >= 0xac00 && input < 0xd7a4)
-            {
-                int hangul = input - 0xac00;
-                int t = hangul % 28; // ㄱ = 1; ㄲ = 2; ㄳ = 3; ...; ㅎ = 27
-                int v = (hangul / 28) % 21; // ㅏ = 0; ㅐ = 1; ...; ㅢ = 19; ㅣ = 20
-                int l = (hangul / (28 * 21)) % 19; // ㄱ = 0; ㄲ = 1; ...; ㅎ = 18
-                int base_val = 0x88a1;
-            }
-            return 0x8148;
         }
         private string ExtractFireEmblemMessageArchive(string outname, byte[] archive)
         {
