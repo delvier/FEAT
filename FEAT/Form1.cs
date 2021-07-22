@@ -875,13 +875,21 @@ namespace Fire_Emblem_Awakening_Archive_Tool
 
             var table = new Dictionary<char, ushort>();
             string table_loc = "table.txt";
-            string[] table_file = File.ReadAllLines(table_loc);
-            foreach (string line in table_file)
+            string[] table_file;
+            try
             {
-                string[] splitted = line.Split('\t');
-                table.Add(splitted[1].ToCharArray()[0], ushort.Parse(splitted[0], System.Globalization.NumberStyles.HexNumber));
+                table_file = File.ReadAllLines(table_loc);
+                foreach (string line in table_file)
+                {
+                    string[] splitted = line.Split('\t');
+                    table.Add(splitted[1].ToCharArray()[0], ushort.Parse(splitted[0], System.Globalization.NumberStyles.HexNumber));
+                }
+                AddLine(RTB_Output, $"\nTable length: {table.Count()}");
             }
-            AddLine(RTB_Output, $"Table length: {table.Count()}");
+            catch (Exception e)
+            {
+                // No Table, Skip
+            }        
             for (int i = 6; i < lines.Length; i++)
             {
                 int ind = lines[i].IndexOf(": ", StringComparison.Ordinal);
@@ -915,15 +923,29 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                     }
                     else if (escape_check == 2)
                     {
-                        hex_code = int.Parse(c.ToString(), System.Globalization.NumberStyles.HexNumber) * 16;
-                        escape_check++;
+                        try
+                        {
+                            hex_code = int.Parse(c.ToString(), System.Globalization.NumberStyles.HexNumber) * 16;
+                            escape_check++;
+                        }
+                        catch (FormatException e)
+                        {
+                            AddLine(RTB_Output, string.Format("Escape Sequence Parse Error"));
+                        }
                     } 
                     else if (escape_check == 3)
                     {
-                        hex_code += int.Parse(c.ToString(), System.Globalization.NumberStyles.HexNumber);
-                        temp.Add((byte)hex_code);
-                        hex_code = 0;
-                        escape_check = 0;
+                        try
+                        {
+                            hex_code += int.Parse(c.ToString(), System.Globalization.NumberStyles.HexNumber);
+                            temp.Add((byte)hex_code);
+                            hex_code = 0;
+                            escape_check = 0;
+                        }
+                        catch (FormatException e)
+                        {
+                            AddLine(RTB_Output, string.Format("Escape Sequence Parse Error"));
+                        }
                     }
                     else
                     {
@@ -932,7 +954,13 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                             temp.AddRange(BitConverter.GetBytes(code).Reverse().ToArray());
                         } else
                         {
-                            temp.AddRange(ShiftJIS.GetBytes(c.ToString()));
+                            try
+                            {
+                                temp.AddRange(ShiftJIS.GetBytes(c.ToString()));
+                            } catch (EncoderFallbackException e)
+                            {
+                                AddLine(RTB_Output, string.Format("{0} cannot be converted. Please check the source text.",c));
+                            }
                         }
                     }
                 }
