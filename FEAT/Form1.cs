@@ -1093,11 +1093,6 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             //// In the Japanese version, the string is always in ShiftJIS.
             var ShiftJIS = Encoding.GetEncoding(932);
             string ArchiveName = "m/" + Path.GetFileName(outname).Replace(".txt", ""); //ShiftJIS.GetString(archive.Skip(0x20).TakeWhile(b => b != 0).ToArray()); // Archive Name.
-            string LZType = "";
-            if (outname[0] > 64 && outname[0] <= 90)
-            {
-                LZType = "LZ11";
-            }
             uint TextPartitionLen = BitConverter.ToUInt32(archive, 4);
             uint StringCount = BitConverter.ToUInt32(archive, 0xC);
             string[] MessageNames = new string[StringCount];
@@ -1137,7 +1132,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             List<string> Lines = new List<string>
             {
                 ArchiveName,
-                LZType + Environment.NewLine,
+                Environment.NewLine,
                 "Message Name: Message",
                 Environment.NewLine
             };
