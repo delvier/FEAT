@@ -487,7 +487,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                         AddText(RTB_Output, string.Format("Rebuilding FEDS Message Archive from {0}...", Path.GetFileName(path)));
                         string outname = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path);
                         byte[] arch = MakeFEDSMessageArchive(textfile);
-                        File.WriteAllBytes(outname + ".tmp", arch);
+                        File.WriteAllBytes(outname + ".bin", arch);
                         AddLine(RTB_Output, "Complete!");
                         byte[] cmp;
                         if (textfile[1].Equals("LZ11"))
@@ -1137,7 +1137,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             List<string> Lines = new List<string>
             {
                 ArchiveName,
-                LZType,
+                LZType + Environment.NewLine,
                 "Message Name: Message",
                 Environment.NewLine
             };
