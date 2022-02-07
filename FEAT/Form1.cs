@@ -276,7 +276,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                     var cmp = File.ReadAllBytes(path);
                     File.WriteAllBytes(path + ".dec", Decompress(cmp));
                     AddLine(RTB_Output, string.Format("Yaz0 decompressed {0}.", path));
-                } 
+                }
                 else if (ext == ".lz")
                 {
                     byte[] filedata = File.ReadAllBytes(path);
@@ -336,6 +336,29 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                             AddLine(RTB_Output, string.Format("Unable to automatically decompress {0}.", Path.GetFileName(path)));
                             Console.WriteLine(ey.Message);
                         }
+                    }
+                    if (B_DeleteAfter.Checked)
+                        File.Delete(path);
+                    if (File.Exists(decpath) && B_AutoExtract.Checked)
+                        Open(decpath);
+                }
+                else if (ext == "")
+                {
+                    byte[] filedata = File.ReadAllBytes(path);
+                    string decpath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileName(path) + ".bin";
+                    if (filedata[0] == 0x11)
+                    {
+                        File.WriteAllBytes(decpath, LZ11Decompress(filedata));
+                        AddLine(RTB_Output, string.Format("Successfully decompressed {0}.", Path.GetFileName(path)));
+                    }
+                    else if (filedata[0] == 0x10)
+                    {
+                        File.WriteAllBytes(decpath, LZ10Decompress(filedata));
+                        AddLine(RTB_Output, string.Format("Successfully decompressed {0}.", Path.GetFileName(path)));
+                    }
+                    else
+                    {
+                        AddLine(RTB_Output, string.Format("Unable to automatically decompress {0}.", Path.GetFileName(path)));
                     }
                     if (B_DeleteAfter.Checked)
                         File.Delete(path);
@@ -462,12 +485,20 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                     else if (textfile.Length > 6 && textfile[0].StartsWith("m/") && textfile[3] == "Message Name: Message" && textfile.Skip(6).All(s => s.Contains(": ")))
                     {
                         AddText(RTB_Output, string.Format("Rebuilding FEDS Message Archive from {0}...", Path.GetFileName(path)));
-                        string outname = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path) + ".bin";
+                        string outname = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(path);
                         byte[] arch = MakeFEDSMessageArchive(textfile);
-                        File.WriteAllBytes(outname, arch);
+                        File.WriteAllBytes(outname + ".tmp", arch);
                         AddLine(RTB_Output, "Complete!");
-                        byte[] cmp = LZ10Compress(arch);
-                        File.WriteAllBytes(outname + ".lz", cmp);
+                        byte[] cmp;
+                        if (textfile[1].Equals("LZ11"))
+                        {
+                            cmp = LZ11Compress(arch);
+                        }
+                        else
+                        {
+                            cmp = LZ10Compress(arch);
+                        }
+                        File.WriteAllBytes(outname, cmp);
                     }
                     else if (B_RubyScript.Checked)
                     {
@@ -1062,22 +1093,28 @@ namespace Fire_Emblem_Awakening_Archive_Tool
             //// In the Japanese version, the string is always in ShiftJIS.
             var ShiftJIS = Encoding.GetEncoding(932);
             string ArchiveName = "m/" + Path.GetFileName(outname).Replace(".txt", ""); //ShiftJIS.GetString(archive.Skip(0x20).TakeWhile(b => b != 0).ToArray()); // Archive Name.
+            string LZType = "";
+            if (outname[0] > 64 && outname[0] <= 90)
+            {
+                LZType = "LZ11";
+            }
             uint TextPartitionLen = BitConverter.ToUInt32(archive, 4);
             uint StringCount = BitConverter.ToUInt32(archive, 0xC);
             string[] MessageNames = new string[StringCount];
             string[] Messages = new string[StringCount];
+            int[] MessageOffsets = new int[StringCount];
 
             uint StringMetaOffset = 0x20 + TextPartitionLen;
             uint NamesOffset = StringMetaOffset + 0x8 * StringCount;
 
             for (int i = 0; i < StringCount; i++)
             {
-                int MessageOffset = 0x20 + BitConverter.ToInt32(archive, (int)StringMetaOffset + 0x8 * i);
+                MessageOffsets[i] = 0x20 + BitConverter.ToInt32(archive, (int)StringMetaOffset + 0x8 * i);
                 /* Don't need MessageLen; null byte is always the end of string
                 int MessageLen = 0;
                 while (BitConverter.ToUInt16(archive, MessageOffset + MessageLen) != 0)
                     MessageLen += 1; */
-                var tmp = ShiftJIS.GetString(archive.Skip(MessageOffset).TakeWhile(b => b != 0).ToArray()).Replace("\\", "\\\\").Replace("\n", "\\n").Replace("\r", "\\r");
+                var tmp = ShiftJIS.GetString(archive.Skip(MessageOffsets[i]).TakeWhile(b => b != 0).ToArray()).Replace("\\", "\\\\").Replace("\n", "\\n").Replace("\r", "\\r");
                 var temp = new StringBuilder();
                 foreach (char c in tmp)
                 {
@@ -1093,11 +1130,14 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                 int NameOffset = (int)NamesOffset + BitConverter.ToInt32(archive, (int)StringMetaOffset + (0x8 * i) + 4);
                 MessageNames[i] = ShiftJIS.GetString(archive.Skip(NameOffset).TakeWhile(b => b != 0).ToArray());
             }
+            Array.Sort(MessageOffsets.ToArray(), Messages);
+            Array.Sort(MessageOffsets.ToArray(), MessageNames);
+            Array.Sort(MessageOffsets);
 
             List<string> Lines = new List<string>
             {
                 ArchiveName,
-                Environment.NewLine,
+                LZType,
                 "Message Name: Message",
                 Environment.NewLine
             };
