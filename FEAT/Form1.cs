@@ -390,7 +390,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                             RunRubyScript("asset_pack.rb", string.Format(" -u \"{0}\"", path));
                             AddLine(RTB_Output, string.Format("Decompiled {0} to {1}", Path.GetFileName(path), Path.GetFileName(path) + ".txt"));
                         }
-                    } else
+                    } else //How to distinguish message archives from others?
                     {
                         string archive_name = ExtractFEDSMessageArchive(outname, filedata);
                         AddLine(RTB_Output, string.Format("Successfully extracted DSFE Message Archive {0}", Path.GetFileName(path)));
@@ -949,7 +949,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                         else
                         {
                             //Messages[i - 6] = "Escape Sequence Parse Error"; - not capable for list<byte>
-                            AddLine(RTB_Output, string.Format("Escape Sequence Parse Error"));
+                            AddLine(RTB_Output, string.Format($"Escape Sequence Parse Error at {Names[i-6]}"));
                         }
                     }
                     else if (escape_check == 2)
@@ -961,7 +961,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                         }
                         catch (FormatException e)
                         {
-                            AddLine(RTB_Output, string.Format("Escape Sequence Parse Error"));
+                            AddLine(RTB_Output, string.Format($"Escape Sequence Parse Error at {Names[i - 6]}"));
                         }
                     } 
                     else if (escape_check == 3)
@@ -975,7 +975,7 @@ namespace Fire_Emblem_Awakening_Archive_Tool
                         }
                         catch (FormatException e)
                         {
-                            AddLine(RTB_Output, string.Format("Escape Sequence Parse Error"));
+                            AddLine(RTB_Output, string.Format($"Escape Sequence Parse Error at {Names[i - 6]}"));
                         }
                     }
                     else
